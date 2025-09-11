@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -119,9 +119,10 @@ const ThemeToggle = styled.button`
 `;
 
 const UserMenu = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 `;
 
 const UserInfo = styled.div`
@@ -144,13 +145,91 @@ const Avatar = styled.div`
   font-size: 0.9rem;
 `;
 
+const Dropdown = styled.div`
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 260px;
+  background: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  overflow: hidden;
+  z-index: 1000;
+`;
+
+const DropHeader = styled.div`
+  padding: 0.75rem 1rem 0.5rem;
+`;
+
+const Badge = styled.span`
+  background: #f97316;
+  color: white;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+`;
+
+const SmallText = styled.div`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const MenuList = styled.div`
+  padding: 0.25rem;
+`;
+
+const MenuItem = styled(Link)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  color: ${({ theme }) => theme.colors.text};
+
+  &:hover { background: ${({ theme }) => theme.colors.surface}; }
+`;
+
+const MenuButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+
+  &:hover { background: ${({ theme }) => theme.colors.surface}; }
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background: ${({ theme }) => theme.colors.border};
+  margin: 0.25rem 0;
+`;
+
 const Header: React.FC = () => {
   const { theme, toggleTheme, isDark } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
   const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (menuRef.current.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    if (open) document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [open]);
 
   return (
     <>
@@ -167,18 +246,22 @@ const Header: React.FC = () => {
           </SearchContainer>
 
           <Nav>
+            <NavLink to="/dashboard" $active={isActive('/dashboard') || location.pathname.startsWith('/dashboard/')}>
+              Dashboard
+            </NavLink>
             <NavLink to="/models" $active={isActive('/models')}>
               Explore
+            </NavLink>
+            <NavLink to="/api-keys" $active={isActive('/api-keys')}>
+              API Keys
+            </NavLink>
+            <NavLink to="/billing" $active={isActive('/billing')}>
+              Billing
             </NavLink>
             <NavLink to="/docs" $active={isActive('/docs')}>
               Doc
             </NavLink>
-            <NavLink to="/blog" $active={isActive('/blog')}>
-              Blog
-            </NavLink>
-            <NavLink to="/creators" $active={isActive('/creators')}>
-              Creators
-            </NavLink>
+          
           </Nav>
 
           <RightSection>
@@ -187,34 +270,47 @@ const Header: React.FC = () => {
             </ThemeToggle>
 
             {isAuthenticated ? (
-              <UserMenu>
-                <NavLink to="/dashboard" $active={isActive('/dashboard')}>
-                  Dashboard
-                </NavLink>
-                <UserInfo>
+              <UserMenu ref={menuRef}>
+                <button onClick={() => setOpen((v) => !v)} style={{ background: 'transparent' }}>
                   <Avatar>{user?.name.charAt(0).toUpperCase()}</Avatar>
-                  <span>{user?.name}</span>
-                </UserInfo>
-                <Button variant="secondary" size="sm" onClick={logout}>
-                  Logout
-                </Button>
+                </button>
+                {open && (
+                  <Dropdown>
+                    <DropHeader>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <strong>{user?.name}</strong>
+                        <Badge>Bronze</Badge>
+                      </div>
+                      <SmallText>{user?.email ?? 'user@example.com'} (google)</SmallText>
+                      <div style={{ marginTop: '0.5rem', fontWeight: 700 }}>$ 0.85 available</div>
+                    </DropHeader>
+                    <Divider />
+                    <MenuList>
+                      <MenuItem to="/billing">Billing</MenuItem>
+                      <MenuItem to="/api-keys">API Keys</MenuItem>
+                      <MenuButton onClick={() => setOpen(false)}>Create Team</MenuButton>
+                      <MenuButton onClick={() => setOpen(false)}>My Inspiration</MenuButton>
+                      <MenuButton onClick={() => setOpen(false)}>Support</MenuButton>
+                      <MenuButton onClick={() => { toggleTheme(); setOpen(false); }}>
+                        <span>Theme</span>
+                        <span>{isDark ? 'Dark' : 'Light'}</span>
+                      </MenuButton>
+                      <Divider />
+                      <MenuButton onClick={() => { setOpen(false); logout(); }}>Sign out</MenuButton>
+                    </MenuList>
+                  </Dropdown>
+                )}
               </UserMenu>
             ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setShowLoginModal(true)}
-              >
-                Sign In
-              </Button>
+              <Link to="/login">
+                <Button variant="primary" size="sm">Sign In</Button>
+              </Link>
             )}
           </RightSection>
         </HeaderContent>
       </HeaderContainer>
 
-      {showLoginModal && (
-        <LoginModal onClose={() => setShowLoginModal(false)} />
-      )}
+      {/* Modal login removed; using /login route */}
     </>
   );
 };

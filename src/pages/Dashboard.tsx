@@ -2,10 +2,11 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
-import { Card, Button } from '../styles/GlobalStyles';
+import { Card, Button, Input } from '../styles/GlobalStyles';
 import ModelCard from '../components/ModelCard';
 import { LoadingState } from '../components/LoadingStates';
 import { models } from '../data/models';
+import { api } from '../api/client';
 
 const DashboardContainer = styled.div`
   padding: 2rem 0;
@@ -69,6 +70,11 @@ const DateRange = styled.div`
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const MiniMuted = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.8rem;
 `;
 
 const UsageStats = styled.div`
@@ -262,6 +268,38 @@ const RequestCell = styled.div`
   }
 `;
 
+const Reminder = styled.div`
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #92400e;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+
+const Filters = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 2fr 1.2fr 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const Select = styled.select`
+  padding: 0.6rem 0.75rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 0.5rem;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+`;
+
 const StatusBadge = styled.span<{ status: 'completed' | 'processing' | 'failed' }>`
   padding: 0.25rem 0.75rem;
   border-radius: 1rem;
@@ -345,14 +383,21 @@ const QuickActions = styled.div`
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'recent' | 'favorites'>('recent');
+  const [activeTab, setActiveTab] = useState<'usage' | 'requests' | 'favorites'>('usage');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
+    const load = async () => {
+      try {
+        // Try fetching models from backend just to validate connectivity (optional)
+        await api.listModels();
+      } catch (e) {
+        // ignore for now; UI can still show local data
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const recentRequests = [
@@ -412,11 +457,14 @@ const Dashboard: React.FC = () => {
           <UserInfo>Here's your AI generation overview and recent activity.</UserInfo>
         </DashboardHeader>
 
+        {activeTab === 'usage' && (
         <TopSection>
           <UsageSection>
             <UsageHeader>
               <UsageTitle>Usage</UsageTitle>
-              <DateRange>Jul 01, 2025 — Jul 31, 2025</DateRange>
+              <DateRange>
+                Sep 01, 2025 — Sep 30, 2025
+              </DateRange>
             </UsageHeader>
 
             <UsageStats>
@@ -440,7 +488,7 @@ const Dashboard: React.FC = () => {
 
             <UsageTable>
               <TableHeader>
-                <TableCell style={{ fontWeight: 600 }}>Model</TableCell>
+                <TableCell style={{ fontWeight: 600 }}>Usage per model</TableCell>
                 <TableCell style={{ fontWeight: 600 }}>Request Count</TableCell>
                 <TableCell style={{ fontWeight: 600 }}>Cost</TableCell>
               </TableHeader>
@@ -485,7 +533,9 @@ const Dashboard: React.FC = () => {
             </QuickActions>
           </QuickStatsCard>
         </TopSection>
+        )}
 
+        {activeTab === 'requests' && (
         <RequestsSection>
           <SectionHeader>
             <SectionTitle>Requests</SectionTitle>
@@ -493,6 +543,26 @@ const Dashboard: React.FC = () => {
               View All
             </Button>
           </SectionHeader>
+          <Reminder>
+            <strong>Reminder</strong>
+            <span>Your outputs are stored for 7 days only. Make sure to download and save them before they expire.</span>
+          </Reminder>
+
+          <Filters>
+            <Input placeholder="ID" />
+            <Input placeholder="Search model..." />
+            <Input placeholder="Pick a date" />
+            <Select defaultValue="all">
+              <option value="all">All</option>
+              <option value="completed">Completed</option>
+              <option value="processing">Processing</option>
+              <option value="failed">Failed</option>
+            </Select>
+            <div style={{ justifySelf: 'end', display: 'flex', gap: '0.5rem' }}>
+              <Button variant="secondary" size="sm">Reset</Button>
+              <Button variant="primary" size="sm">Search</Button>
+            </div>
+          </Filters>
 
           <RequestsTable>
             <RequestsHeader>
@@ -527,6 +597,7 @@ const Dashboard: React.FC = () => {
             ))}
           </RequestsTable>
         </RequestsSection>
+        )}
 
         <section>
           <SectionHeader>
@@ -534,18 +605,9 @@ const Dashboard: React.FC = () => {
           </SectionHeader>
 
           <TabsContainer>
-            <Tab
-              $active={activeTab === 'recent'}
-              onClick={() => setActiveTab('recent')}
-            >
-              Most Popular
-            </Tab>
-            <Tab
-              $active={activeTab === 'favorites'}
-              onClick={() => setActiveTab('favorites')}
-            >
-              Favorites
-            </Tab>
+            <Tab $active={activeTab==='usage'} onClick={() => setActiveTab('usage')}>Usage</Tab>
+            <Tab $active={activeTab==='requests'} onClick={() => setActiveTab('requests')}>Requests</Tab>
+            <Tab $active={activeTab==='favorites'} onClick={() => setActiveTab('favorites')}>Favorites</Tab>
           </TabsContainer>
 
           {activeTab === 'favorites' ? (
@@ -566,6 +628,12 @@ const Dashboard: React.FC = () => {
                 </EmptyState>
               )}
             </>
+          ) : activeTab === 'usage' ? (
+            <FavoritesGrid>
+              {models.slice(0, 4).map((model) => (
+                <ModelCard key={model.id} model={model} />
+              ))}
+            </FavoritesGrid>
           ) : (
             <FavoritesGrid>
               {models.slice(0, 4).map((model) => (
