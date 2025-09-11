@@ -10,4 +10,8 @@ export default defineConfig({
       "same-runtime/dist/jsx-runtime",
     ],
   },
+  define: {
+    // 确保环境变量在构建时可用
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify(process.env.VITE_API_BASE_URL || 'http://47.242.127.155:8000'),
+  },
 });

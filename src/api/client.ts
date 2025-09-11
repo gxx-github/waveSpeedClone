@@ -21,22 +21,39 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers
+  console.log(`Making API request to: ${BASE_URL}${path}`, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body ? JSON.parse(options.body as string) : undefined
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
-  }
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers
+    });
 
-  const contentType = res.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return res.json() as Promise<T>;
+    console.log(`API response status: ${res.status} ${res.statusText}`);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`API error response:`, text);
+      throw new Error(`HTTP ${res.status}: ${text}`);
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const jsonData = await res.json();
+      console.log('API response data:', jsonData);
+      return jsonData as T;
+    }
+    
+    console.log('Non-JSON response received');
+    return undefined as T;
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
   }
-  // @ts-expect-error allow non-json
-  return undefined as T;
 }
 
 // Domain helpers
@@ -49,11 +66,33 @@ export const api = {
     apiRequest<any>('/api/create', { method: 'POST', body: JSON.stringify({ name }) }),
   listApiKeys: () => apiRequest<any>('/api/list', { method: 'GET' }),
 
-  // Auth (placeholder until exact contract known)
+  // Auth
   loginWithToken: (username: string, password: string) =>
     apiRequest<{ access_token: string; token_type: string }>(
       '/auth/token',
       { method: 'POST', body: JSON.stringify({ username, password }) }
+    ),
+  
+  // Google OAuth
+  getGoogleAuthUrl: () => `${BASE_URL}/auth/google`,
+  handleGoogleCallback: (code: string, state?: string) =>
+    apiRequest<{ access_token: string; user: any }>(
+      '/auth/google/callback',
+      { 
+        method: 'POST', 
+        body: JSON.stringify({ code, state }) 
+      }
+    ),
+
+  // GitHub OAuth
+  getGitHubAuthUrl: () => `${BASE_URL}/auth/github`,
+  handleGitHubCallback: (code: string, state?: string) =>
+    apiRequest<{ access_token: string; user: any }>(
+      '/auth/github/callback',
+      { 
+        method: 'POST', 
+        body: JSON.stringify({ code, state }) 
+      }
     ),
 };
 

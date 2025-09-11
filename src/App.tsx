@@ -9,6 +9,9 @@ import ModelsPage from './pages/ModelsPage';
 import ModelDetailPage from './pages/ModelDetailPage';
 import Dashboard from './pages/Dashboard';
 import LoginPage from './pages/LoginPage';
+import OAuthCallback from './pages/OAuthCallback';
+import TestAuth from './pages/TestAuth';
+import AuthDiagnostic from './pages/AuthDiagnostic';
 import ApiKeysPage from './pages/ApiKeysPage';
 import BillingPage from './pages/BillingPage';
 
@@ -26,6 +29,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/models" element={<ModelsPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<OAuthCallback />} />
+        <Route path="/test-auth" element={<TestAuth />} />
+        <Route path="/auth-diagnostic" element={<AuthDiagnostic />} />
         <Route path="/models/:provider/:model" element={<ModelDetailPage />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
