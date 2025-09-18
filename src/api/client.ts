@@ -116,6 +116,28 @@ export const api = {
     ),
 
   // Orders
+  listOrders: (params?: {
+    page?: number;
+    page_size?: number;
+    uuid?: string;
+    model_id?: string;
+    status?: 'created' | 'processing' | 'completed' | 'failed' | string;
+    start_time?: string; // ISO datetime
+    end_time?: string;   // ISO datetime
+  }) => {
+    const search = new URLSearchParams();
+    if (params) {
+      if (params.page) search.set('page', String(params.page));
+      if (params.page_size) search.set('page_size', String(params.page_size));
+      if (params.uuid) search.set('uuid', params.uuid);
+      if (params.model_id) search.set('model_id', params.model_id);
+      if (params.status && params.status !== 'all') search.set('status', params.status);
+      if (params.start_time) search.set('start_time', params.start_time);
+      if (params.end_time) search.set('end_time', params.end_time);
+    }
+    const qs = search.toString();
+    return apiRequest<any>(`/api/order${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
   createOrder: (payload: {
     enable_base64_output: boolean;
     guidance_scale: number;
