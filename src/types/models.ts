@@ -58,7 +58,7 @@ export interface ApiModel {
   description: string;
   price: number;
   type: 'video' | 'image' | 'audio';
-  tags: string[];
+  tag: string[];
   thumbnail: string;
   examples?: string[];
   category: string;

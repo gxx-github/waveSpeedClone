@@ -61,18 +61,63 @@ export const ModelsSkeletonLoader: React.FC<{ count?: number }> = ({ count = 8 }
     <SkeletonGrid>
       {Array.from({ length: count }).map((_, index) => (
         <SkeletonCardContainer key={index}>
+          {/* thumbnail */}
           <SkeletonCard style={{ height: '200px' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <SkeletonText width="60px" height="20px" />
-            <SkeletonText width="50px" height="24px" />
+          {/* tags row */}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <SkeletonText width="60px" height="16px" />
+            <SkeletonText width="80px" height="16px" />
+            <SkeletonText width="70px" height="16px" />
           </div>
+          {/* provider + price */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <SkeletonText width="120px" height="20px" />
+            <SkeletonText width="60px" height="24px" />
+          </div>
+          {/* title/desc */}
           <SkeletonText width="80%" height="18px" />
           <SkeletonText width="100%" height="16px" />
           <SkeletonText width="90%" height="16px" />
+          {/* button */}
           <SkeletonButton />
         </SkeletonCardContainer>
       ))}
     </SkeletonGrid>
+  );
+};
+
+// Sidebar skeleton for filters
+const SidebarSkeletonContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const CheckboxRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const CheckboxBox = styled(SkeletonBase)`
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+`;
+
+export const SidebarSkeleton: React.FC = () => {
+  return (
+    <SidebarSkeletonContainer>
+      <SkeletonText width="120px" height="20px" />
+      {Array.from({ length: 6 }).map((_, i) => (
+        <CheckboxRow key={i}>
+          <CheckboxBox />
+          <SkeletonText width="60%" height="16px" />
+          <SkeletonText width="40px" height="16px" />
+        </CheckboxRow>
+      ))}
+      <SkeletonButton />
+    </SidebarSkeletonContainer>
   );
 };
 

@@ -13,6 +13,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   loginWithGitHub: () => Promise<void>;
   setUser: (user: User | null) => void;
+  setAccessToken: (token: string | null) => void;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -35,44 +36,46 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessToken, setAccessTokenState] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for stored user session
+    // 从本地读取会话
     const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+    }
+    if (storedToken) {
+      setAccessTokenState(storedToken);
     }
     setIsLoading(false);
   }, []);
 
+  const setAccessToken = (token: string | null) => {
+    if (token) {
+      localStorage.setItem('token', token);
+    } else {
+      localStorage.removeItem('token');
+    }
+    setAccessTokenState(token);
+  };
+
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
-      // 虚拟测试账户验证
-      const testAccounts = {
-        'admin': { password: 'admin123', role: 'admin' },
-        'user': { password: 'user123', role: 'user' },
-        'test': { password: 'test123', role: 'user' }
+      // 改为真实后端鉴权
+      const { access_token, token_type } = await (await import('../api/client')).api.loginWithToken(username, password);
+      if (!access_token) throw new Error('No access token');
+      setAccessToken(access_token);
+
+      // 若后端未返回用户信息，使用最小占位信息（可后续通过“/me”接口补全）
+      const minimalUser: User = {
+        id: username,
+        email: username,
+        name: username,
       };
-
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const account = testAccounts[username as keyof typeof testAccounts];
-      
-      if (!account || account.password !== password) {
-        throw new Error('Invalid username or password');
-      }
-
-      const mockUser: User = {
-        id: username === 'admin' ? '1' : '2',
-        email: `${username}@example.com`,
-        name: username === 'admin' ? '管理员' : '普通用户',
-      };
-
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('token', `mock_token_${username}_${Date.now()}`);
+      setUser(minimalUser);
+      localStorage.setItem('user', JSON.stringify(minimalUser));
     } catch (error) {
       throw new Error('Login failed');
     } finally {
@@ -105,6 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    setAccessToken(null);
   };
 
   const value = {
@@ -113,9 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     loginWithGitHub,
     setUser,
+    setAccessToken,
     logout,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!accessToken,
   };
 
   return (

@@ -61,7 +61,7 @@ const ErrorMessage = styled.div`
 const OAuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { setUser, setAccessToken } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -101,15 +101,29 @@ const OAuthCallback: React.FC = () => {
         console.log('Backend response:', response);
         
         if (response && response.access_token) {
-          // 存储token
-          localStorage.setItem('token', response.access_token);
+          // 存储token（上下文+localStorage）
+          setAccessToken(response.access_token);
           console.log('Token stored successfully');
           
           // 设置用户信息
-          if (response.user) {
-            setUser(response.user);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            console.log('User info stored:', response.user);
+          try {
+            const me = await api.me();
+            if (me && me.email) {
+              setUser(me as any);
+              localStorage.setItem('user', JSON.stringify(me));
+              console.log('User info stored from /auth/me:', me);
+            } else if (response.user) {
+              // 后端也可能在回调中返回 user
+              setUser(response.user);
+              localStorage.setItem('user', JSON.stringify(response.user));
+              console.log('User info stored from callback:', response.user);
+            }
+          } catch (e) {
+            console.warn('Failed to fetch /auth/me, fallback to response.user if exists');
+            if (response.user) {
+              setUser(response.user);
+              localStorage.setItem('user', JSON.stringify(response.user));
+            }
           }
           
           // 清理地址栏中的 code/state 等临时参数

@@ -15,7 +15,7 @@ export default defineConfig({
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify('http://47.242.127.155:8000'),
   },
   server: {
-    port: 3000,
+    port: 8000,
     host: '0.0.0.0',
     proxy: {
       // 确保前端路由 /auth/callback 由 SPA 处理，而不是被代理到后端
@@ -35,14 +35,39 @@ export default defineConfig({
         target: 'http://47.242.127.155:8000',
         changeOrigin: true,
         secure: false,
+        // 仅当浏览器直接打开回调路径（期望HTML）时返回 index.html；
+        // XHR/Fetch（Accept: application/json 或带 X-Requested-With）则走真实后端返回 JSON。
         bypass: (req, _res) => {
-          if (req.url && req.url.startsWith('/auth/google/callback')) {
+          const accept = (req.headers && (req.headers as any)['accept']) || '';
+          const xrw = (req.headers && (req.headers as any)['x-requested-with']) || '';
+          const isHtml = typeof accept === 'string' && accept.includes('text/html');
+          const isGet = req.method === 'GET';
+          const isAjax = typeof xrw === 'string' && xrw.toLowerCase() === 'xmlhttprequest';
+          if (req.url && req.url.startsWith('/auth/google/callback') && isGet && isHtml && !isAjax) {
             return '/index.html';
           }
+          // 其他情况不处理，交由代理到后端
         },
       },
       // 代理所有 /api 请求到后端
       '/api': {
+        target: 'http://47.242.127.155:8000',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
+      },
+      // 代理所有 /api 请求到后端
+      '/user/me': {
         target: 'http://47.242.127.155:8000',
         changeOrigin: true,
         secure: false,

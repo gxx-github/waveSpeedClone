@@ -172,9 +172,9 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, apiModel }) => {
 
       <ModelProvider>
         <ProviderIcon>
-          {model.provider?.charAt(0).toUpperCase() || '?'}
+          {model.category?.charAt(0).toUpperCase() || ''}
         </ProviderIcon>
-        <ProviderName>{model.provider || 'Unknown'}</ProviderName>
+        <ProviderName>{model.category || 'Unknown'}</ProviderName>
         <Price>${model.price || 0}</Price>
       </ModelProvider>
 

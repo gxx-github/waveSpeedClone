@@ -16,6 +16,7 @@ function getAuthToken(): string | null {
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
     ...(options.headers || {})
   };
 
@@ -77,16 +78,17 @@ export const api = {
       '/auth/token',
       { method: 'POST', body: JSON.stringify({ username, password }) }
     ),
+  me: () => apiRequest<{ id: string; email: string; name: string }>(
+    '/user/me',
+    { method: 'GET' }
+  ),
   
   // Google OAuth
   getGoogleAuthUrl: () => `${BASE_URL}/auth/google`,
   handleGoogleCallback: (code: string, state?: string) =>
     apiRequest<{ access_token: string; user: any }>(
-      '/auth/google/callback',
-      { 
-        method: 'POST', 
-        body: JSON.stringify({ code, state }) 
-      }
+      `/auth/google/callback?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`,
+      { method: 'GET', headers: { Accept: 'application/json' } }
     ),
 
   // GitHub OAuth

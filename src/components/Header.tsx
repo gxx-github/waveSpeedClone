@@ -7,13 +7,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button, Input } from '../styles/GlobalStyles';
 import LoginModal from './LoginModal';
 
-const HeaderContainer = styled.header`
-  background: ${({ theme }) => theme.colors.background};
+const HeaderContainer = styled.header<{ $scrolled?: boolean }>`
+  background: ${({ theme, $scrolled }) => 
+    $scrolled ? theme.colors.cardBackground : theme.colors.background};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   transition: all 0.3s ease;
+  backdrop-filter: ${({ $scrolled }) => $scrolled ? 'blur(10px)' : 'none'};
+  box-shadow: ${({ $scrolled }) => 
+    $scrolled ? '0 2px 20px rgba(0, 0, 0, 0.1)' : 'none'};
 `;
 
 const HeaderContent = styled.div`
@@ -217,6 +221,7 @@ const Header: React.FC = () => {
   const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
@@ -231,9 +236,20 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('click', onClick);
   }, [open]);
 
+  // 滚动监听
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      setScrolled(scrollTop > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <>
-      <HeaderContainer>
+      <HeaderContainer $scrolled={scrolled}>
         <HeaderContent>
           <Logo to="/">
             <LogoIcon>W</LogoIcon>
