@@ -1,0 +1,73 @@
+[{
+    "id": "minimax-hailuo-02-t2v-standard",
+    "name": "hailuo-02/t2v-standard",
+    "provider": "minimax",
+    "title": "Hailuo 02 Text-to-Video Standard",
+    "description": "Hailuo 02 is a new AI video generation model, from Hailuo AI, created on MiniMax's evolving framework. It has been fine-tuned to deliver ultra-clear 1080P resolution and unprecedented responsiveness while even handling, the craziest of physics driven scenes.",
+    "price": 0.23,
+    "type": "video",
+    "tags": ["HOT", "COMMERCIAL USE", "PARTNER"],
+    "thumbnail": "https://ext.same-assets.com/2897352160/458534267.false",
+    "category": "hailuo-video",
+    "featured": true,
+    "hot": true,
+    "commercial": true,
+    "partner": true,
+    "params": {
+        "seed": {
+            "max": 18446744073709552000,
+            "min": -1,
+            "type": "INT",
+            "default": -1,
+            "tooltip": "Random seed (-1 for random)",
+            "control_after_generate": "True"
+        },
+        "prompt": {
+            "type": "STRING",
+            "default": "A charismatic woman in a dynamic ad set, wearing stylish clothes. She shouts with dramatic excitement: \"Google Veo 3 Fast is now on WaveSpeed AI! It'll blow your mind — go try it now!\"",
+            "tooltip": "Text prompt for generation",
+            "multiline": "True"
+        },
+        "duration": {
+            "max": 10,
+            "min": 5,
+            "step": 5,
+            "type": "INT",
+            "default": 5,
+            "display": "number",
+            "tooltip": "Generate video duration length seconds."
+        },
+        "resolution": {
+            "default": "480p",
+            "tooltip": "Output resolution (480p, 720p or 1080p)",
+            "resolution": [
+                "480p",
+                "720p",
+                "1080p"
+            ]
+        },
+        "aspect_ratio": {
+            "default": "16:9",
+            "tooltip": "The aspect ratio of the generated video",
+            "aspect_ratio": [
+                "21:9",
+                "16:9",
+                "4:3",
+                "1:1",
+                "3:4",
+                "9:16",
+                "9:21"
+            ]
+        },
+        "generate_audio": {
+            "type": "BOOLEAN",
+            "default": true,
+            "tooltip": "Whether to generate audio."
+        },
+        "negative_prompt": {
+            "type": "STRING",
+            "default": "",
+            "tooltip": "Negative prompt to avoid certain elements"
+        }
+    }
+}]

@@ -1,7 +1,7 @@
 import type React from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
-import type { Model } from '../types/models';
+import { Link, useNavigate } from 'react-router-dom';
+import type { Model, ApiModel } from '../types/models';
 import { Card, Button } from '../styles/GlobalStyles';
 
 const ModelCardContainer = styled(Card)`
@@ -131,11 +131,24 @@ const ActionContainer = styled.div`
 
 interface ModelCardProps {
   model: Model;
+  apiModel?: ApiModel;
 }
 
-const ModelCard: React.FC<ModelCardProps> = ({ model }) => {
+const ModelCard: React.FC<ModelCardProps> = ({ model, apiModel }) => {
+  const navigate = useNavigate();
+  
   const getModelUrl = () => {
-    return `/models/${model.provider}/${model.name}`;
+    return `/models/${model.provider || 'unknown'}/${model.name || 'unknown'}`;
+  };
+
+  const handleModelClick = () => {
+    if (apiModel) {
+      // 如果有API模型数据，通过state传递
+      navigate(getModelUrl(), { state: { model: apiModel } });
+    } else {
+      // 否则使用普通链接
+      navigate(getModelUrl());
+    }
   };
 
   const getTagVariant = (tag: string) => {
@@ -149,7 +162,7 @@ const ModelCard: React.FC<ModelCardProps> = ({ model }) => {
     <ModelCardContainer>
       <ModelImage $backgroundImage={model.thumbnail}>
         <TagsContainer>
-          {model.tags.map((tag) => (
+          {model.tags && model.tags.length > 0 && model.tags.map((tag) => (
             <Tag key={tag} $variant={getTagVariant(tag)}>
               {tag}
             </Tag>
@@ -159,19 +172,18 @@ const ModelCard: React.FC<ModelCardProps> = ({ model }) => {
 
       <ModelProvider>
         <ProviderIcon>
-          {model.provider.charAt(0).toUpperCase()}
+          {model.provider?.charAt(0).toUpperCase() || '?'}
         </ProviderIcon>
-        <ProviderName>{model.provider}</ProviderName>
-        <Price>${model.price}</Price>
+        <ProviderName>{model.provider || 'Unknown'}</ProviderName>
+        <Price>${model.price || 0}</Price>
       </ModelProvider>
 
-      <ModelName>{model.name}</ModelName>
-      <ModelDescription>{model.description}</ModelDescription>
+      <ModelName>{model.name || 'Unnamed Model'}</ModelName>
+      <ModelDescription>{model.description || 'No description available'}</ModelDescription>
 
       <ActionContainer>
         <Button
-          as={Link}
-          to={getModelUrl()}
+          onClick={handleModelClick}
           variant="primary"
           size="sm"
           style={{ flex: 1 }}

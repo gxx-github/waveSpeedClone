@@ -112,12 +112,25 @@ const OAuthCallback: React.FC = () => {
             console.log('User info stored:', response.user);
           }
           
+          // 清理地址栏中的 code/state 等临时参数
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('code');
+            url.searchParams.delete('state');
+            url.searchParams.delete('scope');
+            url.searchParams.delete('authuser');
+            url.searchParams.delete('prompt');
+            window.history.replaceState({}, document.title, `${url.pathname}`);
+          } catch (e) {
+            console.warn('Failed to clean callback URL:', e);
+          }
+
           setStatus('success');
           
           // 延迟跳转到仪表板
           setTimeout(() => {
-            navigate('/dashboard');
-          }, 1500);
+            navigate('/dashboard', { replace: true });
+          }, 800);
         } else {
           console.error('Invalid response from backend:', response);
           throw new Error('后端返回的响应格式不正确');

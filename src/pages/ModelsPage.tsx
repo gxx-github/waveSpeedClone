@@ -5,6 +5,8 @@ import { Input, Button } from '../styles/GlobalStyles';
 import ModelCard from '../components/ModelCard';
 import { ModelsSkeletonLoader, LoadingState } from '../components/LoadingStates';
 import { models } from '../data/models';
+import { api } from '../api/client';
+import type { ApiModel } from '../types/models';
 
 const ModelsPageContainer = styled.div`
   padding: 3rem 0;
@@ -197,6 +199,29 @@ const ModelsPage: React.FC = () => {
   const [displayCount, setDisplayCount] = useState(12);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
+  const [apiModels, setApiModels] = useState<ApiModel[]>([]);
+  const [useApiData, setUseApiData] = useState(false);
+
+  // 获取API模型数据
+  useEffect(() => {
+    const fetchApiModels = async () => {
+      try {
+        const response = await api.listModels();
+        if (response && Array.isArray(response)) {
+          setApiModels(response);
+          setUseApiData(true);
+        } else if (response && response.models && Array.isArray(response.models)) {
+          setApiModels(response.models);
+          setUseApiData(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch API models:', error);
+        setUseApiData(false);
+      }
+    };
+
+    fetchApiModels();
+  }, []);
 
   // Simulate loading on initial page load
   useEffect(() => {
@@ -218,14 +243,17 @@ const ModelsPage: React.FC = () => {
   }, [searchQuery]);
 
   const filteredAndSortedModels = useMemo(() => {
-    const filtered = models.filter(model => {
+    // 选择要使用的数据源
+    const dataSource = useApiData ? apiModels : models;
+    
+    const filtered = dataSource.filter(model => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch =
           model.name.toLowerCase().includes(query) ||
-          model.title.toLowerCase().includes(query) ||
-          model.description.toLowerCase().includes(query) ||
+          (model.title && model.title.toLowerCase().includes(query)) ||
+          (model.description && model.description.toLowerCase().includes(query)) ||
           model.provider.toLowerCase().includes(query);
         if (!matchesSearch) return false;
       }
@@ -268,7 +296,7 @@ const ModelsPage: React.FC = () => {
     });
 
     return filtered;
-  }, [searchQuery, typeFilter, providerFilter, sortBy, showHotOnly, showCommercialOnly]);
+  }, [searchQuery, typeFilter, providerFilter, sortBy, showHotOnly, showCommercialOnly, useApiData, apiModels]);
 
   const displayedModels = filteredAndSortedModels.slice(0, displayCount);
   const hasMore = displayCount < filteredAndSortedModels.length;
@@ -416,9 +444,21 @@ const ModelsPage: React.FC = () => {
         ) : displayedModels.length > 0 ? (
           <>
             <ModelsGrid>
-              {displayedModels.map((model) => (
-                <ModelCard key={model.id} model={model} />
-              ))}
+              {displayedModels.map((model, index) => {
+                // 如果是API数据，找到对应的API模型
+                const apiModel = useApiData ? apiModels.find(apiModel => 
+                  apiModel.id === model.id || 
+                  (apiModel.name === model.name && apiModel.provider === model.provider)
+                ) : undefined;
+                
+                return (
+                  <ModelCard 
+                    key={model.id} 
+                    model={model} 
+                    apiModel={apiModel}
+                  />
+                );
+              })}
             </ModelsGrid>
 
             {hasMore && (

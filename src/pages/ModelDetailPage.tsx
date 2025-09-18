@@ -1,9 +1,12 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Card, Button, Input, Textarea } from '../styles/GlobalStyles';
 import { models } from '../data/models';
+import { api } from '../api/client';
+import DynamicParamField from '../components/DynamicParamField';
+import type { ModelParams, ModelParam, ApiModel } from '../types/models';
 
 const ModelDetailContainer = styled.div`
   padding: 2rem 0;
@@ -357,17 +360,37 @@ const ReadmeContent = styled.div`
 
 const ModelDetailPage: React.FC = () => {
   const { provider, model: modelName } = useParams<{ provider: string; model: string }>();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'playground' | 'json' | 'api'>('playground');
-  const [prompt, setPrompt] = useState('A seductive woman in a wet white shirt, dancing barefoot on a marble floor under soft golden light, water dripping slowly from her hair, close-up on glistening skin, slow sensual motion, dramatic shadows');
-  const [duration, setDuration] = useState('6');
-  const [enablePromptExpansion, setEnablePromptExpansion] = useState(true);
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [generatedResult, setGeneratedResult] = useState<string | null>(null);
   const [estimatedTime, setEstimatedTime] = useState<number>(0);
+  const [modelParams, setModelParams] = useState<ModelParams>({});
+  const [paramValues, setParamValues] = useState<Record<string, any>>({});
+  const [loadingParams, setLoadingParams] = useState(false);
+  const [paramsError, setParamsError] = useState<string | null>(null);
 
-  const model = models.find(m => m.provider === provider && m.name === modelName);
+  // 从路由状态中获取模型信息，如果没有则从本地数据中查找
+  const apiModel = location.state?.model as ApiModel | undefined;
+  const model = apiModel ? {
+    id: apiModel.id,
+    name: apiModel.name,
+    provider: apiModel.provider,
+    title: apiModel.title,
+    description: apiModel.description,
+    price: apiModel.price,
+    type: apiModel.type,
+    tags: apiModel.tags,
+    thumbnail: apiModel.thumbnail,
+    examples: apiModel.examples,
+    category: apiModel.category,
+    featured: apiModel.featured,
+    hot: apiModel.hot,
+    commercial: apiModel.commercial,
+    partner: apiModel.partner,
+  } : models.find(m => m.provider === provider && m.name === modelName);
 
   const generationSteps = [
     'Analyzing prompt...',
@@ -382,6 +405,45 @@ const ModelDetailPage: React.FC = () => {
     'https://ext.same-assets.com/2897352160/374079494.false',
     'https://ext.same-assets.com/2897352160/3894555946.false',
   ];
+
+  // 初始化模型参数
+  useEffect(() => {
+    if (apiModel?.params) {
+      // 从API模型对象中获取参数
+      setModelParams(apiModel.params);
+      
+      // 初始化参数值
+      const initialValues: Record<string, any> = {};
+      Object.entries(apiModel.params).forEach(([key, param]) => {
+        const modelParam = param as ModelParam;
+        initialValues[key] = modelParam.default;
+      });
+      setParamValues(initialValues);
+    } else {
+      // 如果没有API模型参数，使用默认参数
+      const defaultParams: ModelParams = {
+        prompt: {
+          type: 'STRING',
+          default: 'A seductive woman in a wet white shirt, dancing barefoot on a marble floor under soft golden light, water dripping slowly from her hair, close-up on glistening skin, slow sensual motion, dramatic shadows',
+          tooltip: 'Text prompt for generation',
+          multiline: true
+        },
+        duration: {
+          type: 'INT',
+          default: 6,
+          min: 5,
+          max: 10,
+          step: 1,
+          tooltip: 'Generate video duration length seconds.'
+        }
+      };
+      setModelParams(defaultParams);
+      setParamValues({
+        prompt: defaultParams.prompt.default,
+        duration: defaultParams.duration.default
+      });
+    }
+  }, [apiModel]);
 
   useEffect(() => {
     if (status === 'processing') {
@@ -432,7 +494,7 @@ const ModelDetailPage: React.FC = () => {
   }
 
   const handleGenerate = () => {
-    if (!prompt.trim()) return;
+    if (!paramValues.prompt || !paramValues.prompt.trim()) return;
 
     setStatus('processing');
     setProgress(0);
@@ -440,8 +502,9 @@ const ModelDetailPage: React.FC = () => {
     setGeneratedResult(null);
 
     // Estimate time based on model type and duration
-    const baseTime = model.type === 'video' ? 30 : 15;
-    const durationMultiplier = Number.parseInt(duration) / 6;
+    const baseTime = model?.type === 'video' ? 30 : 15;
+    const duration = paramValues.duration || 6;
+    const durationMultiplier = Number.parseInt(duration.toString()) / 6;
     setEstimatedTime(baseTime * durationMultiplier);
   };
 
@@ -450,7 +513,54 @@ const ModelDetailPage: React.FC = () => {
     setProgress(0);
     setCurrentStep(0);
     setGeneratedResult(null);
-    setPrompt('');
+    
+    // 重置所有参数为默认值
+    const resetValues: Record<string, any> = {};
+    if (modelParams) {
+      Object.entries(modelParams).forEach(([key, param]) => {
+        resetValues[key] = param.default;
+      });
+    }
+    setParamValues(resetValues);
+  };
+
+  const handleParamChange = (paramName: string, value: any) => {
+    // 参数验证
+    const paramConfig = modelParams[paramName];
+    if (paramConfig) {
+      let validatedValue = value;
+      
+      // 类型验证和转换
+      if (paramConfig.type === 'INT' && typeof value === 'string') {
+        validatedValue = parseInt(value, 10);
+        if (isNaN(validatedValue)) {
+          validatedValue = paramConfig.default;
+        }
+      } else if (paramConfig.type === 'FLOAT' && typeof value === 'string') {
+        validatedValue = parseFloat(value);
+        if (isNaN(validatedValue)) {
+          validatedValue = paramConfig.default;
+        }
+      }
+      
+      // 范围验证
+      if (paramConfig.min !== undefined && validatedValue < paramConfig.min) {
+        validatedValue = paramConfig.min;
+      }
+      if (paramConfig.max !== undefined && validatedValue > paramConfig.max) {
+        validatedValue = paramConfig.max;
+      }
+      
+      setParamValues(prev => ({
+        ...prev,
+        [paramName]: validatedValue
+      }));
+    } else {
+      setParamValues(prev => ({
+        ...prev,
+        [paramName]: value
+      }));
+    }
   };
 
   const handleDownload = () => {
@@ -566,7 +676,7 @@ const ModelDetailPage: React.FC = () => {
           </div>
 
           <ModelBadges>
-            {model.tags.map((tag) => (
+            {model.tags && model.tags.length > 0 && model.tags.map((tag) => (
               <Badge key={tag} $variant={getBadgeVariant(tag)}>
                 {tag}
               </Badge>
@@ -574,10 +684,10 @@ const ModelDetailPage: React.FC = () => {
           </ModelBadges>
 
           <ModelTitle>
-            <span className="provider">{model.provider}</span>/{model.name}
+            <span className="provider">{model?.provider || 'Unknown'}</span>/{model?.name || 'Unknown'}
           </ModelTitle>
 
-          <ModelDescription>{model.description}</ModelDescription>
+          <ModelDescription>{model?.description || 'No description available'}</ModelDescription>
         </ModelHeader>
 
         <MainContent>
@@ -654,51 +764,30 @@ const ModelDetailPage: React.FC = () => {
 
               {activeTab === 'playground' && (
                 <>
-                  <FormGroup>
-                    <Label htmlFor="prompt">prompt *</Label>
-                    <Textarea
-                      id="prompt"
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Describe the video you want to generate..."
-                      rows={4}
-                    />
-                  </FormGroup>
-
-                  <FormGroup>
-                    <Label htmlFor="duration">duration</Label>
-                    <Select
-                      id="duration"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      disabled={status === 'processing'}
-                    >
-                      <option value="6">6 seconds</option>
-                      <option value="10">10 seconds</option>
-                    </Select>
-                  </FormGroup>
-
-                  <CheckboxContainer>
-                    <Checkbox
-                      type="checkbox"
-                      id="enable_prompt_expansion"
-                      checked={enablePromptExpansion}
-                      onChange={(e) => setEnablePromptExpansion(e.target.checked)}
-                      disabled={status === 'processing'}
-                    />
-                    <CheckboxLabel htmlFor="enable_prompt_expansion">
-                      The model automatically optimizes incoming prompts to enhance output quality.
-                      This also activates the safety checker, which ensures content safety by detecting
-                      and filtering potential risks.
-                    </CheckboxLabel>
-                  </CheckboxContainer>
+                  {modelParams && Object.keys(modelParams).length > 0 ? (
+                    Object.entries(modelParams).map(([paramName, paramConfig]) => (
+                      <DynamicParamField
+                        key={paramName}
+                        paramName={paramName}
+                        paramConfig={paramConfig}
+                        value={paramValues[paramName]}
+                        onChange={(value) => handleParamChange(paramName, value)}
+                        disabled={status === 'processing'}
+                      />
+                    ))
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>⚙️</div>
+                      <p>No parameters available for this model</p>
+                    </div>
+                  )}
 
                   <CostInfo>
                     <CostText>
-                      Your request will cost <CostHighlight>${model.price}</CostHighlight> per run.
+                      Your request will cost <CostHighlight>${model?.price || 0}</CostHighlight> per run.
                     </CostText>
                     <CostText>
-                      For $10 you can run this model approximately <CostHighlight>{Math.floor(10 / model.price)}</CostHighlight> times.
+                      For $10 you can run this model approximately <CostHighlight>{Math.floor(10 / (model?.price || 1))}</CostHighlight> times.
                     </CostText>
                   </CostInfo>
 
@@ -715,9 +804,9 @@ const ModelDetailPage: React.FC = () => {
                       onClick={handleGenerate}
                       variant="primary"
                       style={{ flex: 2 }}
-                      disabled={status === 'processing' || !prompt.trim()}
+                      disabled={status === 'processing' || !paramValues.prompt?.trim()}
                     >
-                      {status === 'processing' ? `Generating... ${Math.round(progress)}%` : `Run $${model.price}`}
+                      {status === 'processing' ? `Generating... ${Math.round(progress)}%` : `Run $${model?.price || 0}`}
                     </Button>
                   </div>
                 </>
@@ -725,11 +814,7 @@ const ModelDetailPage: React.FC = () => {
 
               {activeTab === 'json' && (
                 <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
-                  <pre>{JSON.stringify({
-                    prompt,
-                    duration: Number.parseInt(duration),
-                    enable_prompt_expansion: enablePromptExpansion
-                  }, null, 2)}</pre>
+                  <pre>{JSON.stringify(paramValues, null, 2)}</pre>
                 </div>
               )}
 
@@ -739,11 +824,17 @@ const ModelDetailPage: React.FC = () => {
                     Use this model via API endpoint:
                   </p>
                   <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
-                    <code>POST /api/models/{model.provider}/{model.name}/generate</code>
+                    <code>POST /api/models/{model?.provider}/{model?.name}/generate</code>
                   </div>
                   <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#6b7280' }}>
                     Include your API key in the Authorization header and send the parameters as JSON in the request body.
                   </p>
+                  <div style={{ marginTop: '1rem' }}>
+                    <p style={{ marginBottom: '0.5rem', fontWeight: '500' }}>Available parameters:</p>
+                    <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.8rem' }}>
+                      <pre>{JSON.stringify(modelParams || {}, null, 2)}</pre>
+                    </div>
+                  </div>
                 </div>
               )}
             </PlaygroundCard>

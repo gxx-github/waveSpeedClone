@@ -82,8 +82,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginWithGoogle = async () => {
     try {
-      // 重定向到谷歌OAuth授权页面
-      window.location.href = `${import.meta.env.VITE_API_BASE_URL || 'http://47.242.127.155:8000'}/auth/google`;
+      // 重定向到谷歌OAuth授权页面，并显式告知后端回跳到前端的回调路由
+      // 开发环境使用相对路径（通过Vite代理），生产使用完整后端地址
+      const apiBase = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://47.242.127.155:8000');
+      const redirectUri = `${window.location.origin}/auth/callback`;
+      const authUrl = `${apiBase}/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
+      window.location.href = authUrl;
     } catch (error) {
       throw new Error('Google login failed');
     }

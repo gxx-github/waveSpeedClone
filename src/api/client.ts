@@ -1,6 +1,9 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
-export const BASE_URL = 'http://47.242.127.155:8000';
+// 在开发环境中使用相对路径（通过Vite代理），生产环境使用完整URL
+export const BASE_URL = import.meta.env.DEV 
+  ? '' // 开发环境使用相对路径，通过Vite代理
+  : (import.meta.env.VITE_API_BASE_URL || 'http://47.242.127.155:8000');
 
 function getAuthToken(): string | null {
   try {
@@ -60,6 +63,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 export const api = {
   // Models
   listModels: () => apiRequest<any>('/api/models', { method: 'GET' }),
+  getModelParams: (provider: string, modelName: string) => 
+    apiRequest<any>(`/api/models/${provider}/${modelName}`, { method: 'GET' }),
 
   // API Keys (naming per backend: create/list)
   createApiKey: (name: string) =>
