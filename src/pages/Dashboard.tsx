@@ -45,7 +45,7 @@ const UsageSubtitle = styled.p`
   margin: 0;
 `;
 
-const DateRangeContainer = styled.div`
+const UsageDateRangeContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -63,7 +63,7 @@ const DateRangeContainer = styled.div`
   }
 `;
 
-const DateRangeText = styled.span`
+const UsageDateRangeText = styled.span`
   font-size: 0.9rem;
 `;
 
@@ -384,6 +384,11 @@ const ActionIcon = styled.button`
   }
 `;
 
+const DateRangeInput = styled(Input)`
+  font-size: 0.9rem;
+  min-width: 200px;
+`;
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -411,6 +416,7 @@ const Dashboard: React.FC = () => {
     };
     load();
   }, []);
+
 
   // Mock data based on the image
   const usageData = {
@@ -551,11 +557,11 @@ const Dashboard: React.FC = () => {
               <UsageTitle>Usage</UsageTitle>
               <UsageSubtitle>See usage statistics per model</UsageSubtitle>
             </div>
-            <DateRangeContainer>
+            <UsageDateRangeContainer>
               <span>📅</span>
-              <DateRangeText>Sep 01, 2025 – Sep 30, 2025</DateRangeText>
+              <UsageDateRangeText>Sep 01, 2025 – Sep 30, 2025</UsageDateRangeText>
               <CloseIcon>✕</CloseIcon>
-            </DateRangeContainer>
+            </UsageDateRangeContainer>
           </UsageHeader>
 
           <UsageContent>
@@ -638,13 +644,13 @@ const Dashboard: React.FC = () => {
               value={filters.model}
               onChange={(e) => handleFilterChange('model', e.target.value)}
             />
-            <FilterInput 
-              placeholder="start date (YYYY-MM-DD)" 
+            <DateRangeInput 
+              placeholder="开始时间 (YYYY-MM-DD)" 
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
             />
-            <FilterInput 
-              placeholder="end date (YYYY-MM-DD)" 
+            <DateRangeInput 
+              placeholder="结束时间 (YYYY-MM-DD)" 
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
             />
