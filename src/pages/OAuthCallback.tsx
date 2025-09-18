@@ -111,7 +111,7 @@ const OAuthCallback: React.FC = () => {
             if (me && me.email) {
               setUser(me as any);
               localStorage.setItem('user', JSON.stringify(me));
-              console.log('User info stored from /auth/me:', me);
+              console.log('User info stored from /users/user/me:', me);
             } else if (response.user) {
               // 后端也可能在回调中返回 user
               setUser(response.user);
@@ -119,7 +119,7 @@ const OAuthCallback: React.FC = () => {
               console.log('User info stored from callback:', response.user);
             }
           } catch (e) {
-            console.warn('Failed to fetch /auth/me, fallback to response.user if exists');
+            console.warn('Failed to fetch /users/user/me, fallback to response.user if exists');
             if (response.user) {
               setUser(response.user);
               localStorage.setItem('user', JSON.stringify(response.user));

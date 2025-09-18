@@ -138,7 +138,7 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, apiModel }) => {
   const navigate = useNavigate();
   
   const getModelUrl = () => {
-    return `/models/${model.provider || 'unknown'}/${model.name || 'unknown'}`;
+    return `/models/${model.name || 'unknown'}`;
   };
 
   const handleModelClick = () => {

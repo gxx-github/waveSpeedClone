@@ -70,16 +70,10 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <Router>
-            <GlobalStyles />
-            <AppRoutes />
-          </Router>
-        </ToastProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <Router>
+      <GlobalStyles />
+      <AppRoutes />
+    </Router>
   );
 };
 

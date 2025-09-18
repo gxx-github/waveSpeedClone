@@ -67,7 +67,7 @@ export default defineConfig({
         },
       },
       // 代理所有 /api 请求到后端
-      '/user/me': {
+      '/users': {
         target: 'http://47.242.127.155:8000',
         changeOrigin: true,
         secure: false,

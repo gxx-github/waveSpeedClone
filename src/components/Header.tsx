@@ -217,7 +217,7 @@ const Divider = styled.div`
 
 const Header: React.FC = () => {
   const { theme, toggleTheme, isDark } = useTheme();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, fetchUserInfo } = useAuth();
   const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [open, setOpen] = useState(false);
@@ -246,6 +246,13 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // 获取用户信息
+  useEffect(() => {
+    if (isAuthenticated && !user) {
+      fetchUserInfo().catch(console.error);
+    }
+  }, [isAuthenticated, user, fetchUserInfo]);
 
   return (
     <>
@@ -288,16 +295,16 @@ const Header: React.FC = () => {
             {isAuthenticated ? (
               <UserMenu ref={menuRef}>
                 <button onClick={() => setOpen((v) => !v)} style={{ background: 'transparent' }}>
-                  <Avatar>{user?.name.charAt(0).toUpperCase()}</Avatar>
+                  <Avatar>{(user?.name || user?.email || 'U').toString().charAt(0).toUpperCase()}</Avatar>
                 </button>
                 {open && (
                   <Dropdown>
                     <DropHeader>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <strong>{user?.name}</strong>
+                        <strong>{user?.name || user?.email}</strong>
                         <Badge>Bronze</Badge>
                       </div>
-                      <SmallText>{user?.email ?? 'user@example.com'} (google)</SmallText>
+                      <SmallText>{user?.email ?? 'user@example.com'}</SmallText>
                       <div style={{ marginTop: '0.5rem', fontWeight: 700 }}>$ 0.85 available</div>
                     </DropHeader>
                     <Divider />

@@ -6,7 +6,7 @@ import { Button } from '../styles/GlobalStyles';
 import ModelCard from '../components/ModelCard';
 import { models, modelCollections, videoEffects } from '../data/models';
 import { api } from '../api/client';
-import type { Model } from '../types/models';
+import type { Model, ApiModel } from '../types/models';
 
 const HomePageContainer = styled.div`
   background: ${({ theme }) => theme.colors.background};
@@ -413,27 +413,7 @@ const ModelGrid = styled.div`
   }
 `;
 
-interface ApiModel {
-  id: string;
-  name: string;
-  // 后端字段命名
-  company?: string;
-  collections?: string;
-  describe?: string;
-  tag?: string[];
-  url?: string;
-
-  // 兼容此前假设的字段（有些后端也可能返回这些）
-  provider?: string;
-  price: number;
-  description?: string;
-  thumbnail?: string;
-  featured?: boolean;
-  category?: string;
-  title?: string;
-  type?: 'video' | 'image' | 'audio';
-  tags?: string[];
-}
+// 使用统一的 ApiModel 类型定义
 
 // 将API模型转换为本地Model格式
 const convertApiModelToModel = (apiModel: ApiModel): Model => ({
@@ -445,10 +425,13 @@ const convertApiModelToModel = (apiModel: ApiModel): Model => ({
   // 后端价格单位不确定，做一次简单归一化（>10 视作分）
   price: apiModel.price > 10 ? Number((apiModel.price / 100).toFixed(2)) : apiModel.price,
   type: apiModel.type || 'image',
-  tags: (apiModel.tags && apiModel.tags.length ? apiModel.tags : (apiModel.tag || [])).map(t => String(t)),
-  thumbnail: apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model',
+  tags: (apiModel.tag && apiModel.tag.length ? apiModel.tag : []).map((t: any) => String(t)),
+  thumbnail: apiModel.index_url || apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model',
   category: apiModel.category || 'general',
-  featured: apiModel.featured || false,
+  featured: Boolean(apiModel.featured),
+  hot: Boolean(apiModel.hot),
+  commercial: Boolean(apiModel.commercial),
+  partner: Boolean(apiModel.partner),
 });
 
 const HomePage: React.FC = () => {
@@ -524,13 +507,20 @@ const HomePage: React.FC = () => {
             </ErrorMessage>
           ) : null}
           <ModelGrid>
-            {featuredModels.map((model, index) => (
-              <ModelCard 
-                key={model.id} 
-                model={model} 
-                apiModel={apiModels[index]} 
-              />
-            ))}
+            {featuredModels.map((model) => {
+              const apiModel = apiModels.find(apiModel => 
+                apiModel.id === model.id || 
+                (apiModel.name === model.name && (apiModel.provider === model.provider || apiModel.company === model.provider))
+              );
+              
+              return (
+                <ModelCard 
+                  key={model.id} 
+                  model={model} 
+                  apiModel={apiModel}
+                />
+              );
+            })}
           </ModelGrid>
         </Container>
       </Section>

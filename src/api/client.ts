@@ -91,8 +91,8 @@ export const api = {
       '/auth/token',
       { method: 'POST', body: JSON.stringify({ username, password }) }
     ),
-  me: () => apiRequest<{ id: string; email: string; name: string }>(
-    '/user/me',
+  me: () => apiRequest<{ id: number; email: string; api_count: number; price: number; created_at: string }>(
+    '/users/user/me',
     { method: 'GET' }
   ),
   

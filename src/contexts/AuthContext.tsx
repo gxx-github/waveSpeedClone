@@ -2,9 +2,12 @@ import type React from 'react';
 import { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
-  id: string;
+  id: number;
   email: string;
-  name: string;
+  api_count?: number;
+  price?: number;
+  created_at?: string;
+  name?: string;
 }
 
 interface AuthContextType {
@@ -14,6 +17,7 @@ interface AuthContextType {
   loginWithGitHub: () => Promise<void>;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
+  fetchUserInfo: () => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -60,6 +64,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAccessTokenState(token);
   };
 
+  const fetchUserInfo = async () => {
+    try {
+      const userInfo = await (await import('../api/client')).api.me();
+      setUser(userInfo);
+      localStorage.setItem('user', JSON.stringify(userInfo));
+    } catch (error) {
+      console.error('Failed to fetch user info:', error);
+      throw error;
+    }
+  };
+
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
@@ -68,14 +83,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!access_token) throw new Error('No access token');
       setAccessToken(access_token);
 
-      // 若后端未返回用户信息，使用最小占位信息（可后续通过“/me”接口补全）
-      const minimalUser: User = {
-        id: username,
-        email: username,
-        name: username,
-      };
-      setUser(minimalUser);
-      localStorage.setItem('user', JSON.stringify(minimalUser));
+      // 登录成功后获取用户信息
+      await fetchUserInfo();
     } catch (error) {
       throw new Error('Login failed');
     } finally {
@@ -118,6 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGitHub,
     setUser,
     setAccessToken,
+    fetchUserInfo,
     logout,
     isLoading,
     isAuthenticated: !!accessToken,

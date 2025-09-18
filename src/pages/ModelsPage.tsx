@@ -312,18 +312,19 @@ const ModelsPage: React.FC = () => {
   const convertApiModelToModel = (apiModel: ApiModel): Model => ({
     id: String(apiModel.id),
     name: apiModel.name,
-    provider: apiModel.provider || 'unknown',
+    provider: apiModel.provider || apiModel.company || apiModel.collections || 'unknown',
     title: apiModel.title || apiModel.name,
-    description: apiModel.description || '',
-    price: apiModel.price || 0,
+    description: apiModel.describe || apiModel.description || '',
+    // 后端价格单位不确定，做一次简单归一化（>10 视作分）
+    price: apiModel.price > 10 ? Number((apiModel.price / 100).toFixed(2)) : apiModel.price,
     type: apiModel.type || 'image',
     tags: (apiModel.tag && apiModel.tag.length ? apiModel.tag : []).map(t => String(t)),
-    thumbnail: apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model',
+    thumbnail: apiModel.index_url || apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model',
     category: apiModel.category || 'general',
-    featured: apiModel.featured || false,
-    hot: apiModel.hot || false,
-    commercial: apiModel.commercial || false,
-    partner: apiModel.partner || false,
+    featured: Boolean(apiModel.featured),
+    hot: Boolean(apiModel.hot),
+    commercial: Boolean(apiModel.commercial),
+    partner: Boolean(apiModel.partner),
   });
 
   // 获取API模型数据
@@ -578,7 +579,7 @@ const ModelsPage: React.FC = () => {
                   {displayedModels.map((model, index) => {
                     const apiModel = useApiData ? apiModels.find(apiModel => 
                       apiModel.id === model.id || 
-                      (apiModel.name === model.name && apiModel.provider === model.provider)
+                      (apiModel.name === model.name && (apiModel.provider === model.provider || apiModel.company === model.provider))
                     ) : undefined;
                     
                     return (

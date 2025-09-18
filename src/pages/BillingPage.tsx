@@ -1,7 +1,8 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Card, Button, Input } from '../styles/GlobalStyles';
+import { useAuth } from '../contexts/AuthContext';
 
 const PageContainer = styled.div`
   padding: 2rem 0;
@@ -186,12 +187,20 @@ const Small = styled.span`
 `;
 
 const BillingPage: React.FC = () => {
+  const { user, fetchUserInfo, isAuthenticated } = useAuth();
   const balance = 0.85;
   const [tab, setTab] = useState<'topup' | 'billing'>('topup');
   const [amount, setAmount] = useState<'10' | '50' | '100' | 'custom'>('10');
   const [customAmount, setCustomAmount] = useState(2);
   const [payment, setPayment] = useState<'paypal' | 'stripe'>('stripe');
   const history: Array<{ id: string; date: string; description: string; amount: number; status: string }> = [];
+
+  // 获取用户信息
+  useEffect(() => {
+    if (isAuthenticated && !user) {
+      fetchUserInfo().catch(console.error);
+    }
+  }, [isAuthenticated, user, fetchUserInfo]);
 
   const selectedValue = amount === 'custom' ? customAmount : Number(amount);
 
@@ -296,9 +305,9 @@ const BillingPage: React.FC = () => {
 
           <AccountCard>
             <h2 style={{ marginBottom: '0.75rem' }}>My Account</h2>
-            <Avatar>W</Avatar>
-            <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Xin GU</div>
-            <Small>stitchone23@gmail.com</Small>
+            <Avatar>{(user?.name || user?.email || 'U').toString().charAt(0).toUpperCase()}</Avatar>
+            <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{user?.name || user?.email || 'User'}</div>
+            <Small>{user?.email || 'user@example.com'}</Small>
             <Balance style={{ marginTop: '1rem' }}>${balance.toFixed(2)}</Balance>
             <Small>Account Balance</Small>
             <Small>The balance never expires.</Small>

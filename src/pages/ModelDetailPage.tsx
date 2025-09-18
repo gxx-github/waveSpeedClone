@@ -375,21 +375,21 @@ const ModelDetailPage: React.FC = () => {
   // 从路由状态中获取模型信息，如果没有则从本地数据中查找
   const apiModel = location.state?.model as ApiModel | undefined;
   const model = apiModel ? {
-    id: apiModel.id,
+    id: String(apiModel.id),
     name: apiModel.name,
-    provider: apiModel.provider,
-    title: apiModel.title,
-    description: apiModel.description,
-    price: apiModel.price,
-    type: apiModel.type,
-    tags: apiModel.tags,
-    thumbnail: apiModel.thumbnail,
+    provider: apiModel.provider || apiModel.company || apiModel.collections || 'unknown',
+    title: apiModel.title || apiModel.name,
+    description: apiModel.describe || apiModel.description || '',
+    price: apiModel.price > 10 ? Number((apiModel.price / 100).toFixed(2)) : apiModel.price,
+    type: apiModel.type || 'image',
+    tags: apiModel.tag || [],
+    thumbnail: apiModel.index_url || apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model',
     examples: apiModel.examples,
-    category: apiModel.category,
-    featured: apiModel.featured,
-    hot: apiModel.hot,
-    commercial: apiModel.commercial,
-    partner: apiModel.partner,
+    category: apiModel.category || 'general',
+    featured: Boolean(apiModel.featured),
+    hot: Boolean(apiModel.hot),
+    commercial: Boolean(apiModel.commercial),
+    partner: Boolean(apiModel.partner),
   } : models.find(m => m.provider === provider && m.name === modelName);
 
   const generationSteps = [
@@ -659,7 +659,6 @@ const ModelDetailPage: React.FC = () => {
     if (tag.toLowerCase().includes('partner')) return 'partner';
     return undefined;
   };
-
   return (
     <ModelDetailContainer>
       <Container>

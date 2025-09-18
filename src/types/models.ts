@@ -51,20 +51,26 @@ export interface ModelParams {
 }
 
 export interface ApiModel {
-  id: string;
+  id: string | number;
   name: string;
-  provider: string;
-  title: string;
-  description: string;
+  provider?: string;
+  title?: string;
+  description?: string;
   price: number;
-  type: 'video' | 'image' | 'audio';
-  tag: string[];
-  thumbnail: string;
+  type?: 'video' | 'image' | 'audio';
+  tag?: string[];
+  thumbnail?: string;
+  index_url?: string; // 模型图片字段
   examples?: string[];
-  category: string;
+  category?: string;
   featured?: boolean;
   hot?: boolean;
   commercial?: boolean;
   partner?: boolean;
   params?: ModelParams;
+  // 后端字段命名
+  company?: string;
+  collections?: string;
+  describe?: string;
+  url?: string;
 }
