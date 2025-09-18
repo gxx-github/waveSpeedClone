@@ -114,6 +114,23 @@ export const api = {
         body: JSON.stringify({ code, state }) 
       }
     ),
+
+  // Orders
+  createOrder: (payload: {
+    enable_base64_output: boolean;
+    guidance_scale: number;
+    image: string;
+    loras: Array<{ path: string; scale: number }>;
+    num_images: number;
+    num_inference_steps: number;
+    output_format: string;
+    prompt: string;
+    seed: number;
+    size: string;
+    strength: number;
+    url: string;
+    id: number;
+  }) => apiRequest<any>('/api/order', { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 

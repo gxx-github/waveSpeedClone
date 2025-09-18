@@ -6,6 +6,7 @@ import { Card, Button, Input, Textarea } from '../styles/GlobalStyles';
 import { models } from '../data/models';
 import { api } from '../api/client';
 import DynamicParamField from '../components/DynamicParamField';
+import { useToast } from '../components/Toast';
 import type { ModelParams, ModelParam, ApiModel } from '../types/models';
 
 const ModelDetailContainer = styled.div`
@@ -361,6 +362,7 @@ const ReadmeContent = styled.div`
 const ModelDetailPage: React.FC = () => {
   const { provider, model: modelName } = useParams<{ provider: string; model: string }>();
   const location = useLocation();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'playground' | 'json' | 'api'>('playground');
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
@@ -454,8 +456,11 @@ const ModelDetailPage: React.FC = () => {
         setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(progressInterval);
-            setStatus('completed');
-            setGeneratedResult(mockResults[Math.floor(Math.random() * mockResults.length)]);
+            // 只有在没有生成结果时才设置完成状态
+            if (!generatedResult) {
+              setStatus('completed');
+              setGeneratedResult(mockResults[Math.floor(Math.random() * mockResults.length)]);
+            }
             return 100;
           }
           return prev + 2;
@@ -477,7 +482,7 @@ const ModelDetailPage: React.FC = () => {
         clearInterval(stepInterval);
       };
     }
-  }, [status, estimatedTime, generationSteps.length]);
+  }, [status, estimatedTime, generationSteps.length, generatedResult]);
 
   if (!model) {
     return (
@@ -493,7 +498,7 @@ const ModelDetailPage: React.FC = () => {
     );
   }
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!paramValues.prompt || !paramValues.prompt.trim()) return;
 
     setStatus('processing');
@@ -501,11 +506,106 @@ const ModelDetailPage: React.FC = () => {
     setCurrentStep(0);
     setGeneratedResult(null);
 
-    // Estimate time based on model type and duration
+    // 估算时长
     const baseTime = model?.type === 'video' ? 30 : 15;
     const duration = paramValues.duration || 6;
     const durationMultiplier = Number.parseInt(duration.toString()) / 6;
     setEstimatedTime(baseTime * durationMultiplier);
+
+    try {
+      const payload = {
+        enable_base64_output: false,
+        guidance_scale: 3.5,
+        image: "",
+        loras: [
+          {
+            path: "strangerzonehf/Flux-Super-Realism-LoRA",
+            scale: 1
+          }
+        ],
+        num_images: 1,
+        num_inference_steps: 28,
+        output_format: "jpeg",
+        prompt: String(paramValues.prompt ?? ''),
+        seed: -1,
+        size: "1024*1024",
+        strength: 0.8,
+        url: `api/v3/${(model?.provider || 'wavespeed-ai')}/${(model?.name || '').toString()}`,
+        id: Number.isFinite(Number(model?.id)) ? Number(model?.id) : Date.now(),
+      };
+
+      console.log('Submitting order with payload:', payload);
+      const res = await api.createOrder(payload);
+      console.log('Order created successfully:', res);
+      if(res.error){
+        setStatus('error');
+
+        // 规范化后端错误：可能是字符串化的JSON，或形如 "HTTP 401: {..}"
+        let errorMessage = '生成失败，请重试';
+        try {
+          const raw = String(res.error || '');
+          // 尝试从 raw 中提取 JSON 体
+          const jsonMatch = raw.match(/\{[\s\S]*\}$/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed?.message) errorMessage = parsed.message;
+          } else if (raw) {
+            errorMessage = raw;
+          }
+        } catch {}
+  
+        // 针对 401 未授权的友好提示
+        if (/401|unauthorized/i.test(errorMessage)) {
+          errorMessage = '未授权访问，请先登录后重试';
+        }
+  
+        showToast(`错误: ${errorMessage}`, { type: 'error' });
+        return ;
+      }
+
+      // 如果后端返回可预览的结果URL，尽量显示
+      const possibleUrl = res?.result_url || res?.url || res?.image_url || res?.preview_url || res?.output_url;
+      if (typeof possibleUrl === 'string' && possibleUrl) {
+        setGeneratedResult(possibleUrl);
+        setStatus('completed');
+        showToast('生成成功！', { type: 'success' });
+      } else {
+        // 如果没有立即返回结果，保持processing状态，等待后续轮询或回调
+        console.log('Order submitted, waiting for result...');
+        showToast('任务已提交，正在生成中...', { type: 'info' });
+        // 这里可以添加轮询逻辑来检查任务状态
+        // 暂时使用模拟结果
+        setTimeout(() => {
+          setGeneratedResult(mockResults[Math.floor(Math.random() * mockResults.length)]);
+          setStatus('completed');
+          showToast('生成完成！', { type: 'success' });
+        }, 3000);
+      }
+    } catch (err: any) {
+      console.error('Create order failed:', err);
+      setStatus('error');
+
+      // 规范化后端错误：可能是字符串化的JSON，或形如 "HTTP 401: {..}"
+      let errorMessage = '生成失败，请重试';
+      try {
+        const raw = String(err?.response?.data || err?.message || err?.error || '');
+        // 尝试从 raw 中提取 JSON 体
+        const jsonMatch = raw.match(/\{[\s\S]*\}$/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed?.message) errorMessage = parsed.message;
+        } else if (raw) {
+          errorMessage = raw;
+        }
+      } catch {}
+
+      // 针对 401 未授权的友好提示
+      if (/401|unauthorized/i.test(errorMessage)) {
+        errorMessage = '未授权访问，请先登录后重试';
+      }
+
+      showToast(`错误: ${errorMessage}`, { type: 'error' });
+    }
   };
 
   const handleReset = () => {
@@ -694,48 +794,6 @@ const ModelDetailPage: React.FC = () => {
             <PreviewArea>
               {renderPreviewContent()}
             </PreviewArea>
-
-            <ExamplesSection>
-              <SectionTitle>Examples <Link to="#" style={{ fontSize: '1rem', fontWeight: 'normal' }}>View all</Link></SectionTitle>
-              <ExamplesGrid>
-                {[1, 2, 3].map((i) => (
-                  <ExampleCard
-                    key={i}
-                    style={{
-                      backgroundImage: `url(${mockResults[i % mockResults.length]})`
-                    }}
-                  />
-                ))}
-              </ExamplesGrid>
-            </ExamplesSection>
-
-            <ReadmeSection>
-              <SectionTitle>README</SectionTitle>
-              <ReadmeContent>
-                <h3>What Makes Hailuo 02 Outperform Other AI Video Generation Models?</h3>
-
-                <h3>1080P Native Output</h3>
-                <p>
-                  Nobody wants blurry footage. Hailuo 02 gives you the full HD 1080P video straight from the model,
-                  not upscaled afterwards. This is a huge leap from the previously limited 720P.
-                </p>
-
-                <h3>Enhanced Motion & Physical Effects</h3>
-                <p>
-                  This model doesn't merely understand movement—it completely owns it. Hailuo 02 is equipped with
-                  state-of-the-art motion rendering, allowing it to capture dynamic scenes and physical interactions
-                  more smoothly than most competitors.
-                </p>
-
-                <h3>Use Cases of Hailuo 02</h3>
-                <ul>
-                  <li><strong>Short-form social content</strong> - Ideal for TikTok, Instagram Reels, or YouTube Shorts</li>
-                  <li><strong>Ad and product videos</strong> - Create high-resolution, motion-rich videos</li>
-                  <li><strong>Game and film prototyping</strong> - Rapidly visualize characters and scenes</li>
-                  <li><strong>Educational content</strong> - Turn complex concepts into engaging animations</li>
-                </ul>
-              </ReadmeContent>
-            </ReadmeSection>
           </LeftSection>
 
           <RightSection>
