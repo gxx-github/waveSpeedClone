@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -159,11 +159,19 @@ const Disclaimer = styled.p`
 `;
 
 const LoginPage: React.FC = () => {
-  const { login, loginWithGoogle, loginWithGitHub, isLoading } = useAuth();
+  const { login, loginWithGoogle, loginWithGitHub, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  // 已登录则重定向到首页
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (isAuthenticated || token) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -183,32 +191,7 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
 
-    if (!username || !password) {
-      setError('请填写用户名和密码');
-      return;
-    }
-
-    try {
-      await login(username, password);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('用户名或密码错误');
-    }
-  };
-
-  const fillTestAccount = (account: 'admin' | 'user') => {
-    if (account === 'admin') {
-      setUsername('admin');
-      setPassword('admin123');
-    } else {
-      setUsername('user');
-      setPassword('user123');
-    }
-  };
 
   return (
     <Page>
@@ -233,84 +216,6 @@ const LoginPage: React.FC = () => {
           </svg>
           {isLoading ? '登录中...' : '使用 GitHub 登录'}
         </Button>
-
-        <Divider>
-          <span>或</span>
-        </Divider>
-
-        {/* 用户名密码登录表单 */}
-        <Form onSubmit={handleFormSubmit}>
-          <FormGroup>
-            <Label htmlFor="username">用户名</Label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="输入用户名"
-              required
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="password">密码</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="输入密码"
-              required
-            />
-          </FormGroup>
-
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-
-          <Button type="submit" $variant="primary" disabled={isLoading}>
-            {isLoading ? '登录中...' : '登录'}
-          </Button>
-        </Form>
-
-        {/* 测试账户信息 */}
-        <TestAccountInfo>
-          <TestAccountTitle>🧪 测试账户（接口未通时使用）</TestAccountTitle>
-          <TestAccountText>
-            <strong>管理员账户:</strong> admin / admin123
-            <button 
-              onClick={() => fillTestAccount('admin')}
-              style={{ 
-                marginLeft: '0.5rem', 
-                padding: '0.25rem 0.5rem', 
-                fontSize: '0.75rem',
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.25rem',
-                cursor: 'pointer'
-              }}
-            >
-              填入
-            </button>
-          </TestAccountText>
-          <TestAccountText>
-            <strong>普通用户:</strong> user / user123
-            <button 
-              onClick={() => fillTestAccount('user')}
-              style={{ 
-                marginLeft: '0.5rem', 
-                padding: '0.25rem 0.5rem', 
-                fontSize: '0.75rem',
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.25rem',
-                cursor: 'pointer'
-              }}
-            >
-              填入
-            </button>
-          </TestAccountText>
-        </TestAccountInfo>
 
         <Disclaimer>
           登录即表示您同意我们的 <a href="/terms">服务条款</a> 和 <a href="/privacy">隐私政策</a>。

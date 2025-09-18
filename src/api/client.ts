@@ -40,6 +40,19 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     console.log(`API response status: ${res.status} ${res.statusText}`);
 
     if (!res.ok) {
+      // 401 统一处理：清理会话并跳转登录
+      if (res.status === 401) {
+        try {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        } catch {}
+        const isAuthRoute = path.startsWith('/auth');
+        const onLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+        if (!isAuthRoute && !onLoginPage && typeof window !== 'undefined') {
+          const returnURL = encodeURIComponent(window.location.href);
+          window.location.replace(`/login?returnURL=${returnURL}`);
+        }
+      }
       const text = await res.text();
       console.error(`API error response:`, text);
       throw new Error(`HTTP ${res.status}: ${text}`);

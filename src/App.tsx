@@ -4,6 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { GlobalStyles } from './styles/GlobalStyles';
 import Layout from './components/Layout';
+import { ToastProvider } from './components/Toast';
 import HomePage from './pages/HomePage';
 import ModelsPage from './pages/ModelsPage';
 import ModelDetailPage from './pages/ModelDetailPage';
@@ -71,10 +72,12 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <GlobalStyles />
-          <AppRoutes />
-        </Router>
+        <ToastProvider>
+          <Router>
+            <GlobalStyles />
+            <AppRoutes />
+          </Router>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );
