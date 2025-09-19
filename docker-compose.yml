@@ -1,0 +1,13 @@
+version: '3'
+services:
+  ai.speed.front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ai.speed.front
+    container_name: ai.speed.front
+    restart: always
+    ports:
+      - 41011:80
+    volumes:
+      - /data/waveSpeedClone/ai.speed.front.nginx.conf:/etc/nginx/conf.d/ai.speed.nginx.conf
