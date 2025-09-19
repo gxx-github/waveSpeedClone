@@ -16,7 +16,7 @@ export default defineConfig(({ command, mode }) => {
     define: {
       // 确保环境变量在构建时可用
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-        isProduction ? '' : 'http://47.242.127.155:8000'
+        isProduction ? '' : ''
       ),
     },
     server: {
@@ -27,7 +27,7 @@ export default defineConfig(({ command, mode }) => {
         proxy: {
           // 确保前端路由 /auth/callback 由 SPA 处理，而不是被代理到后端
           '/auth/callback': {
-            target: 'http://47.242.127.155:8000',
+            target: 'http://47.242.127.155:41010',
             changeOrigin: true,
             secure: false,
             bypass: (req, _res) => {
@@ -39,7 +39,7 @@ export default defineConfig(({ command, mode }) => {
           },
           // 同样处理 /auth/google/callback 以兼容后端固定回调路径
           '/auth/google/callback': {
-            target: 'http://47.242.127.155:8000',
+            target: 'http://47.242.127.155:41010',
             changeOrigin: true,
             secure: false,
             // 仅当浏览器直接打开回调路径（期望HTML）时返回 index.html；
@@ -58,49 +58,9 @@ export default defineConfig(({ command, mode }) => {
           },
           // 代理所有 /api 请求到后端
           '/api': {
-            target: 'http://47.242.127.155:8000',
+            target: 'http://47.242.127.155:41010',
             changeOrigin: true,
             secure: false,
-            configure: (proxy, _options) => {
-              proxy.on('error', (err, _req, _res) => {
-                console.log('proxy error', err);
-              });
-              proxy.on('proxyReq', (proxyReq, req, _res) => {
-                console.log('Sending Request to the Target:', req.method, req.url);
-              });
-              proxy.on('proxyRes', (proxyRes, req, _res) => {
-                console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-              });
-            },
-          },
-          // 代理所有 /api 请求到后端
-          '/users': {
-            target: 'http://47.242.127.155:8000',
-            changeOrigin: true,
-            secure: false,
-            configure: (proxy, _options) => {
-              proxy.on('error', (err, _req, _res) => {
-                console.log('proxy error', err);
-              });
-              proxy.on('proxyReq', (proxyReq, req, _res) => {
-                console.log('Sending Request to the Target:', req.method, req.url);
-              });
-              proxy.on('proxyRes', (proxyRes, req, _res) => {
-                console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-              });
-            },
-          },
-          // 代理所有 /auth 请求到后端
-          '/auth': {
-            target: 'http://47.242.127.155:8000',
-            changeOrigin: true,
-            secure: false,
-            bypass: (req, _res) => {
-              if (req.url && (req.url.startsWith('/auth/callback') || req.url.startsWith('/auth/google/callback'))) {
-                // 避免 /auth/callback 被此规则代理
-                return '/index.html';
-              }
-            },
             configure: (proxy, _options) => {
               proxy.on('error', (err, _req, _res) => {
                 console.log('proxy error', err);
@@ -115,7 +75,7 @@ export default defineConfig(({ command, mode }) => {
           },
           // 代理所有 /docs 请求到后端（用于API文档）
           '/docs': {
-            target: 'http://47.242.127.155:8000',
+            target: 'http://47.242.127.155:41010',
             changeOrigin: true,
             secure: false,
           },

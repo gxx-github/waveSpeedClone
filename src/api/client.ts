@@ -86,19 +86,19 @@ export const api = {
   // Auth
   loginWithToken: (username: string, password: string) =>
     apiRequest<{ access_token: string; token_type: string }>(
-      '/auth/token',
+      '/api/auth/token',
       { method: 'POST', body: JSON.stringify({ username, password }) }
     ),
   me: () => apiRequest<{ id: number; email: string; api_count: number; price: number; created_at: string }>(
-    '/users/user/me',
+    '/api/users/user/me',
     { method: 'GET' }
   ),
   
   // Google OAuth
-  getGoogleAuthUrl: () => `${BASE_URL}/auth/google`,
+  getGoogleAuthUrl: () => `${BASE_URL}/api/auth/google`,
   handleGoogleCallback: (code: string, state?: string) =>
     apiRequest<{ access_token: string; user: any }>(
-      `/auth/google/callback?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`,
+      `/api/auth/google/callback?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`,
       { method: 'GET', headers: { Accept: 'application/json' } }
     ),
 
