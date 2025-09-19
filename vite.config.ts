@@ -15,7 +15,9 @@ export default defineConfig(({ command, mode }) => {
     },
     define: {
       // 确保环境变量在构建时可用
-      'import.meta.env.VITE_API_BASE_URL': JSON.stringify('http://47.242.127.155:8000'),
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
+        isProduction ? '' : 'http://47.242.127.155:8000'
+      ),
     },
     server: {
       port: 8000,

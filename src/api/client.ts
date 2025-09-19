@@ -1,9 +1,7 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
-// 在开发环境中使用相对路径（通过Vite代理），生产环境使用完整URL
-export const BASE_URL = import.meta.env.DEV 
-  ? '' // 开发环境使用相对路径，通过Vite代理
-  : (import.meta.env.VITE_API_BASE_URL || 'http://47.242.127.155:8000');
+// 在开发环境中使用相对路径（通过Vite代理），生产环境也使用相对路径
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
