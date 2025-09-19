@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // 使用相对路径，让请求发送到当前域名
       const apiBase = import.meta.env.VITE_API_BASE_URL || '';
       const redirectUri = `${window.location.origin}/auth/callback`;
-      const authUrl = `${apiBase}/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
+      const authUrl = `${apiBase}/api/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
       window.location.href = authUrl;
     } catch (error) {
       throw new Error('Google login failed');

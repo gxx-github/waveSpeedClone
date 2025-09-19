@@ -90,7 +90,7 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ username, password }) }
     ),
   me: () => apiRequest<{ id: number; email: string; api_count: number; price: number; created_at: string }>(
-    '/api/users/user/me',
+    '/api/users/users/me',
     { method: 'GET' }
   ),
   
