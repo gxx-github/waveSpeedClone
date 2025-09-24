@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { Card, Button, Input, Textarea } from '../styles/GlobalStyles';
-import { models } from '../data/models';
 import { api } from '../api/client';
 import DynamicParamField from '../components/DynamicParamField';
 import { useToast } from '../components/Toast';
@@ -80,7 +79,7 @@ const ModelTitle = styled.h1`
 const ModelDescription = styled.p`
   font-size: 1.1rem;
   line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textSecondary };
   max-width: 800px;
 `;
 
@@ -374,35 +373,64 @@ const ModelDetailPage: React.FC = () => {
   const [loadingParams, setLoadingParams] = useState(false);
   const [paramsError, setParamsError] = useState<string | null>(null);
 
-  // 从路由状态中获取模型信息，如果没有则从本地数据中查找
+  // 路由状态模型；若无，则从接口获取匹配模型
   const apiModel = location.state?.model as ApiModel | undefined;
-  const model = apiModel ? (() => {
-    const name = apiModel.model_name || apiModel.name || '';
-    const priceRaw = apiModel.base_price ?? apiModel.price ?? 0;
+  const [fetchedApiModel, setFetchedApiModel] = useState<ApiModel | undefined>(undefined);
+  const [loadingModel, setLoadingModel] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!apiModel) {
+      const fetchAndMatch = async () => {
+        try {
+          setLoadingModel(true);
+          const list = await api.listModels();
+          const arr: ApiModel[] = Array.isArray(list) ? list : (list?.models || []);
+          const match = arr.find((m) => {
+            const name = (m.model_name || m.name || '').toString();
+            return name === `${provider}/${modelName}` 
+          });
+          console.log('match', match);
+          if (match) setFetchedApiModel(match);
+        } catch (e) {
+          console.error('Failed to fetch model from /api/model:', e);
+        } finally {
+          setLoadingModel(false);
+        }
+      };
+      fetchAndMatch();
+    }
+  }, [apiModel, provider, modelName]);
+
+  const effectiveApiModel: ApiModel | undefined = apiModel || fetchedApiModel;
+console.log('effectiveApiModel', effectiveApiModel);
+
+  const model = effectiveApiModel ? (() => {
+    const name = effectiveApiModel.model_name || effectiveApiModel.name || '';
+    const priceRaw = effectiveApiModel.base_price ?? effectiveApiModel.price ?? 0;
     const price = priceRaw > 10 ? Number((priceRaw / 100).toFixed(2)) : Number(priceRaw);
-    const thumbnail = apiModel.cover_url || apiModel.index_url || apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model';
-    const tags = (apiModel.tags && apiModel.tags.length ? apiModel.tags : apiModel.tag || []);
-    const normalizedType = typeof apiModel.type === 'string'
-      ? (apiModel.type.includes('video') ? 'video' : apiModel.type.includes('image') ? 'image' : 'image')
+    const thumbnail = effectiveApiModel.cover_url || effectiveApiModel.index_url || effectiveApiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model';
+    const tags = (effectiveApiModel.tags && effectiveApiModel.tags.length ? effectiveApiModel.tags : effectiveApiModel.tag || []);
+    const normalizedType = typeof effectiveApiModel.type === 'string'
+      ? (effectiveApiModel.type.includes('video') ? 'video' : effectiveApiModel.type.includes('image') ? 'image' : 'image')
       : 'image';
     return {
-      id: String(apiModel.id),
+      id: String(effectiveApiModel.id),
       name,
-      provider: apiModel.provider || apiModel.company || apiModel.collections || 'unknown',
-      title: apiModel.title || name,
-      description: apiModel.description || apiModel.describe || '',
+      provider: effectiveApiModel.provider || effectiveApiModel.company || effectiveApiModel.collections || 'unknown',
+      title: effectiveApiModel.title || name,
+      description: effectiveApiModel.description || effectiveApiModel.describe || '',
       price,
-      type: normalizedType as 'video' | 'image' | 'audio',
+      type: effectiveApiModel.type,
       tags,
       thumbnail,
-      examples: apiModel.examples,
-      category: apiModel.category || apiModel.collections || 'general',
-      featured: Boolean(apiModel.featured),
-      hot: Boolean(apiModel.hot),
-      commercial: Boolean(apiModel.commercial),
-      partner: Boolean(apiModel.partner),
+      examples: effectiveApiModel.examples,
+      category: effectiveApiModel.category || effectiveApiModel.collections || 'general',
+      featured: Boolean(effectiveApiModel.featured),
+      hot: Boolean(effectiveApiModel.hot),
+      commercial: Boolean(effectiveApiModel.commercial),
+      partner: Boolean(effectiveApiModel.partner),
     };
-  })() : models.find(m => m.provider === provider && m.name === modelName);
+  })() : undefined;
 
   const generationSteps = [
     'Analyzing prompt...',
@@ -418,12 +446,11 @@ const ModelDetailPage: React.FC = () => {
     'https://ext.same-assets.com/2897352160/3894555946.false',
   ];
 
-  // 初始化模型参数
+  // 初始化模型参数（优先用 API 模型）
   useEffect(() => {
-    if (apiModel?.params) {
-      // 将后端参数结构转换为前端可渲染的 ModelParams
+    if (effectiveApiModel?.params) {
       const transformed: ModelParams = {};
-      Object.entries(apiModel.params).forEach(([key, p]: any) => {
+      Object.entries(effectiveApiModel.params).forEach(([key, p]: any) => {
         const backendType = String(p.type || '').toLowerCase();
         const mapType = backendType === 'integer' ? 'INT' : backendType === 'number' ? 'FLOAT' : backendType === 'boolean' ? 'BOOLEAN' : 'STRING';
         const param: ModelParam = {
@@ -432,7 +459,6 @@ const ModelDetailPage: React.FC = () => {
           required: Boolean(p.required),
         };
         if (Array.isArray(p.range)) {
-          // 如果是枚举/离散值，作为 options 渲染
           param.options = p.range as Array<string | number>;
           param.display = 'select';
         } else if (p.range && Array.isArray(p.range)) {
@@ -442,9 +468,8 @@ const ModelDetailPage: React.FC = () => {
       });
       setModelParams(transformed);
 
-      // 初始化参数值，优先使用 playground 中的示例
       const initialValues: Record<string, any> = {};
-      const playgroundDefaults = apiModel.playground || {};
+      const playgroundDefaults = effectiveApiModel.playground || {};
       Object.entries(transformed).forEach(([key, param]) => {
         if (playgroundDefaults && Object.prototype.hasOwnProperty.call(playgroundDefaults, key)) {
           initialValues[key] = (playgroundDefaults as any)[key];
@@ -453,31 +478,8 @@ const ModelDetailPage: React.FC = () => {
         }
       });
       setParamValues(initialValues);
-    } else {
-      // 如果没有API模型参数，使用默认参数
-      const defaultParams: ModelParams = {
-        prompt: {
-          type: 'STRING',
-          default: 'A seductive woman in a wet white shirt, dancing barefoot on a marble floor under soft golden light, water dripping slowly from her hair, close-up on glistening skin, slow sensual motion, dramatic shadows',
-          tooltip: 'Text prompt for generation',
-          multiline: true
-        },
-        duration: {
-          type: 'INT',
-          default: 6,
-          min: 5,
-          max: 10,
-          step: 1,
-          tooltip: 'Generate video duration length seconds.'
-        }
-      };
-      setModelParams(defaultParams);
-      setParamValues({
-        prompt: defaultParams.prompt.default,
-        duration: defaultParams.duration.default
-      });
     }
-  }, [apiModel]);
+  }, [effectiveApiModel]);
 
   useEffect(() => {
     if (status === 'processing') {
@@ -488,7 +490,6 @@ const ModelDetailPage: React.FC = () => {
         setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(progressInterval);
-            // 只有在没有生成结果时才设置完成状态
             if (!generatedResult) {
               setStatus('completed');
               setGeneratedResult(mockResults[Math.floor(Math.random() * mockResults.length)]);
@@ -531,7 +532,6 @@ const ModelDetailPage: React.FC = () => {
   }
 
   const handleGenerate = async () => {
-    // 必填参数校验
     const missing: string[] = [];
     Object.entries(modelParams).forEach(([key, cfg]) => {
       if (cfg.required) {
@@ -551,7 +551,6 @@ const ModelDetailPage: React.FC = () => {
     setCurrentStep(0);
     setGeneratedResult(null);
 
-    // 估算时长
     const baseTime = model?.type === 'video' ? 30 : 15;
     const duration = paramValues.duration || 6;
     const durationMultiplier = Number.parseInt(duration.toString()) / 6;
@@ -585,11 +584,9 @@ const ModelDetailPage: React.FC = () => {
       if(res.error){
         setStatus('error');
 
-        // 规范化后端错误：可能是字符串化的JSON，或形如 "HTTP 401: {..}"
         let errorMessage = '生成失败，请重试';
         try {
           const raw = String(res.error || '');
-          // 尝试从 raw 中提取 JSON 体
           const jsonMatch = raw.match(/\{[\s\S]*\}$/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
@@ -599,7 +596,6 @@ const ModelDetailPage: React.FC = () => {
           }
         } catch {}
   
-        // 针对 401 未授权的友好提示
         if (/401|unauthorized/i.test(errorMessage)) {
           errorMessage = '未授权访问，请先登录后重试';
         }
@@ -608,18 +604,14 @@ const ModelDetailPage: React.FC = () => {
         return ;
       }
 
-      // 如果后端返回可预览的结果URL，尽量显示
       const possibleUrl = res?.result_url || res?.url || res?.image_url || res?.preview_url || res?.output_url;
       if (typeof possibleUrl === 'string' && possibleUrl) {
         setGeneratedResult(possibleUrl);
         setStatus('completed');
         showToast('生成成功！', { type: 'success' });
       } else {
-        // 如果没有立即返回结果，保持processing状态，等待后续轮询或回调
         console.log('Order submitted, waiting for result...');
         showToast('任务已提交，正在生成中...', { type: 'info' });
-        // 这里可以添加轮询逻辑来检查任务状态
-        // 暂时使用模拟结果
         setTimeout(() => {
           setGeneratedResult(mockResults[Math.floor(Math.random() * mockResults.length)]);
           setStatus('completed');
@@ -630,11 +622,9 @@ const ModelDetailPage: React.FC = () => {
       console.error('Create order failed:', err);
       setStatus('error');
 
-      // 规范化后端错误：可能是字符串化的JSON，或形如 "HTTP 401: {..}"
       let errorMessage = '生成失败，请重试';
       try {
         const raw = String(err?.response?.data || err?.message || err?.error || '');
-        // 尝试从 raw 中提取 JSON 体
         const jsonMatch = raw.match(/\{[\s\S]*\}$/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
@@ -644,7 +634,6 @@ const ModelDetailPage: React.FC = () => {
         }
       } catch {}
 
-      // 针对 401 未授权的友好提示
       if (/401|unauthorized/i.test(errorMessage)) {
         errorMessage = '未授权访问，请先登录后重试';
       }
@@ -658,8 +647,6 @@ const ModelDetailPage: React.FC = () => {
     setProgress(0);
     setCurrentStep(0);
     setGeneratedResult(null);
-    
-    // 重置所有参数为默认值
     const resetValues: Record<string, any> = {};
     if (modelParams) {
       Object.entries(modelParams).forEach(([key, param]) => {
@@ -670,12 +657,9 @@ const ModelDetailPage: React.FC = () => {
   };
 
   const handleParamChange = (paramName: string, value: any) => {
-    // 参数验证
     const paramConfig = modelParams[paramName];
     if (paramConfig) {
       let validatedValue = value;
-      
-      // 类型验证和转换
       if (paramConfig.type === 'INT' && typeof value === 'string') {
         validatedValue = parseInt(value, 10);
         if (isNaN(validatedValue)) {
@@ -687,15 +671,12 @@ const ModelDetailPage: React.FC = () => {
           validatedValue = paramConfig.default;
         }
       }
-      
-      // 范围验证
       if (paramConfig.min !== undefined && validatedValue < paramConfig.min) {
         validatedValue = paramConfig.min;
       }
       if (paramConfig.max !== undefined && validatedValue > paramConfig.max) {
         validatedValue = paramConfig.max;
       }
-      
       setParamValues(prev => ({
         ...prev,
         [paramName]: validatedValue
@@ -810,13 +791,13 @@ const ModelDetailPage: React.FC = () => {
         <Breadcrumbs>
           <Link to="/">Home</Link> / <Link to="/models">Explore</Link> /
           <Link to="/collections/minimax">HAILUO VIDEO MODELS</Link> /
-          {provider}/{modelName}
+          {modelName}
         </Breadcrumbs>
 
         <ModelHeader>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
             <span style={{ fontSize: '1.5rem' }}>🎬</span>
-            <span style={{ color: '#6b7280' }}>text-to-video</span>
+            <span style={{ color: '#6b7280' }}>{model?.type}</span>
           </div>
 
           <ModelBadges>
@@ -828,7 +809,7 @@ const ModelDetailPage: React.FC = () => {
           </ModelBadges>
 
           <ModelTitle>
-            <span className="provider">{model?.provider || 'Unknown'}</span>/{model?.name || 'Unknown'}
+     {model?.name || 'Unknown'}
           </ModelTitle>
 
           <ModelDescription>{model?.description || 'No description available'}</ModelDescription>
