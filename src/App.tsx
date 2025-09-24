@@ -11,13 +11,13 @@ import ModelDetailPage from './pages/ModelDetailPage';
 import Dashboard from './pages/Dashboard';
 import LoginPage from './pages/LoginPage';
 import OAuthCallback from './pages/OAuthCallback';
-import TestAuth from './pages/TestAuth';
 import ApiKeysPage from './pages/ApiKeysPage';
 import BillingPage from './pages/BillingPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  console.log('isAuthenticated', isAuthenticated);
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
@@ -31,7 +31,6 @@ const AppRoutes: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<OAuthCallback />} />
         <Route path="/auth/google/callback" element={<OAuthCallback />} />
-        <Route path="/test-auth" element={<TestAuth />} />
         <Route path="/models/:provider/:model" element={<ModelDetailPage />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>

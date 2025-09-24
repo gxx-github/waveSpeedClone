@@ -5,7 +5,7 @@ export interface Model {
   title: string;
   description: string;
   price: number;
-  type: 'video' | 'image' | 'audio';
+  type: string;
   tags: string[];
   thumbnail: string;
   examples?: string[];

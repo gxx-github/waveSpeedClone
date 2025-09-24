@@ -433,10 +433,12 @@ const convertApiModelToModel = (apiModel: ApiModel): Model => {
     title: apiModel.title || name,
     description: apiModel.description || apiModel.describe || '',
     price,
-    type: normalizedType as Model['type'],
+    type: apiModel.type ,
+
     tags,
     thumbnail,
-    category: apiModel.category || apiModel.collections || 'general',
+    category: apiModel.company
+    || apiModel.collections || 'general',
     featured: Boolean(apiModel.featured),
     hot: Boolean(apiModel.hot),
     commercial: Boolean(apiModel.commercial),
@@ -481,7 +483,7 @@ const HomePage: React.FC = () => {
 
   // 合并API数据和本地数据
   const featuredModels: Model[] = apiModels.length > 0
-    ? apiModels.slice(0, 8).map(convertApiModelToModel)
+    ? apiModels.slice(0, 9).map(convertApiModelToModel)
     : [];
 
   return (

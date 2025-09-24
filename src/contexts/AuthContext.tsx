@@ -44,8 +44,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // 从本地读取会话
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
+    const storedUser = `{
+  "id": 1,
+  "email": "stitchone23@gmail.com",
+  "api_count": 3,
+  "price": 0,
+  "created_at": "2025-09-16T13:48:06.696583+00:00"
+}`
+    const storedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg3MjczODd9.K9di4lwF2JLPYGpwMPqekIMBBSqXWRFuVEBsm3l-Hn8'
+    // // 从本地读取会话
+    // const storedUser = localStorage.getItem('user');
+    // const storedToken = localStorage.getItem('token');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }

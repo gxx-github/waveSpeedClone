@@ -194,9 +194,7 @@ const ModelsHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  padding-bottom: 1.5rem;
 `;
 
 const ModelsTitle = styled.h2`
@@ -327,10 +325,10 @@ const ModelsPage: React.FC = () => {
       title: apiModel.title || name,
       description: apiModel.description || apiModel.describe || '',
       price,
-      type: normalizedType as Model['type'],
+      type: apiModel.type  || '' ,
       tags,
       thumbnail,
-      category: apiModel.category || apiModel.collections || 'general',
+      category: apiModel.company || apiModel.collections || 'general',
       featured: Boolean(apiModel.featured),
       hot: Boolean(apiModel.hot),
       commercial: Boolean(apiModel.commercial),
@@ -381,7 +379,7 @@ const ModelsPage: React.FC = () => {
   // 获取所有可用的分类和提供商
   const availableCategories = useMemo(() => {
     const dataSource = useApiData ? apiModels.map(convertApiModelToModel) : models;
-    const categories = new Set(dataSource.map(model => model.category).filter(category => category));
+    const categories = new Set(dataSource.map(model => model.type).filter(category => category));
     return Array.from(categories).sort();
   }, [useApiData, apiModels]);
 
@@ -402,8 +400,8 @@ const ModelsPage: React.FC = () => {
         if (!matchesSearch) return false;
       }
 
-      // 分类过滤
-      if (selectedCategories.length > 0 && !selectedCategories.includes(model.category)) {
+      // 类型过滤
+      if (selectedCategories.length > 0 && !selectedCategories.includes(model.type)) {
         return false;
       }
 
@@ -456,7 +454,7 @@ const ModelsPage: React.FC = () => {
 
   const getCategoryCount = (category: string) => {
     const dataSource = useApiData ? apiModels.map(convertApiModelToModel) : models;
-    return dataSource.filter(model => model.category === category).length;
+    return dataSource.filter(model => model.type === category).length;
   };
 
 
@@ -527,7 +525,7 @@ const ModelsPage: React.FC = () => {
                       checked={selectedCategories.includes(category)}
                       onChange={() => handleCategoryChange(category)}
                     />
-                    <OptionText>{category?.replace('-', ' ').toUpperCase() || 'Unknown'}</OptionText>
+                    <OptionText>{category}</OptionText>
                     <OptionCount>{getCategoryCount(category)}</OptionCount>
                   </FilterOption>
                 ))}
@@ -563,24 +561,7 @@ const ModelsPage: React.FC = () => {
               </SortSelect>
             </ModelsHeader>
 
-            <StatsContainer>
-              <StatItem>
-                <StatNumber>{stats.totalModels}</StatNumber>
-                <StatLabel>Total Models</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatNumber>{stats.videoModels}</StatNumber>
-                <StatLabel>Video Models</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatNumber>{stats.imageModels}</StatNumber>
-                <StatLabel>Image Models</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatNumber>{stats.audioModels}</StatNumber>
-                <StatLabel>Audio Models</StatLabel>
-              </StatItem>
-            </StatsContainer>
+          
 
             {isSearching ? (
               <LoadingState message="Searching models..." />

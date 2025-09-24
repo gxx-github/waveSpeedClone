@@ -5,7 +5,8 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    return localStorage.getItem('token');
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg3MjczODd9.K9di4lwF2JLPYGpwMPqekIMBBSqXWRFuVEBsm3l-Hn8';
+    // return localStorage.getItem('token');
   } catch {
     return null;
   }
@@ -45,11 +46,11 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
           localStorage.removeItem('user');
         } catch {}
         const isAuthRoute = path.startsWith('/auth');
-        const onLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
-        if (!isAuthRoute && !onLoginPage && typeof window !== 'undefined') {
-          const returnURL = encodeURIComponent(window.location.href);
-          window.location.replace(`/login?returnURL=${returnURL}`);
-        }
+        // const onLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+        // if (!isAuthRoute && !onLoginPage && typeof window !== 'undefined') {
+        //   const returnURL = encodeURIComponent(window.location.href);
+        //   window.location.replace(`/login?returnURL=${returnURL}`);
+        // }
       }
       const text = await res.text();
       console.error(`API error response:`, text);
