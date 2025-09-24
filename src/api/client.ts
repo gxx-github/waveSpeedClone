@@ -98,7 +98,7 @@ export const api = {
   getGoogleAuthUrl: () => `${BASE_URL}/api/auth/google`,
   handleGoogleCallback: (code: string, state?: string) =>
     apiRequest<{ access_token: string; user: any }>(
-      `/auth/google/callback?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`,
+      `/api/auth/google/callback?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`,
       { method: 'GET', headers: { Accept: 'application/json' } }
     ),
 
