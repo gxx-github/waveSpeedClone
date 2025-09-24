@@ -376,23 +376,33 @@ const ModelDetailPage: React.FC = () => {
 
   // 从路由状态中获取模型信息，如果没有则从本地数据中查找
   const apiModel = location.state?.model as ApiModel | undefined;
-  const model = apiModel ? {
-    id: String(apiModel.id),
-    name: apiModel.name,
-    provider: apiModel.provider || apiModel.company || apiModel.collections || 'unknown',
-    title: apiModel.title || apiModel.name,
-    description: apiModel.describe || apiModel.description || '',
-    price: apiModel.price > 10 ? Number((apiModel.price / 100).toFixed(2)) : apiModel.price,
-    type: apiModel.type || 'image',
-    tags: apiModel.tag || [],
-    thumbnail: apiModel.index_url || apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model',
-    examples: apiModel.examples,
-    category: apiModel.category || 'general',
-    featured: Boolean(apiModel.featured),
-    hot: Boolean(apiModel.hot),
-    commercial: Boolean(apiModel.commercial),
-    partner: Boolean(apiModel.partner),
-  } : models.find(m => m.provider === provider && m.name === modelName);
+  const model = apiModel ? (() => {
+    const name = apiModel.model_name || apiModel.name || '';
+    const priceRaw = apiModel.base_price ?? apiModel.price ?? 0;
+    const price = priceRaw > 10 ? Number((priceRaw / 100).toFixed(2)) : Number(priceRaw);
+    const thumbnail = apiModel.cover_url || apiModel.index_url || apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model';
+    const tags = (apiModel.tags && apiModel.tags.length ? apiModel.tags : apiModel.tag || []);
+    const normalizedType = typeof apiModel.type === 'string'
+      ? (apiModel.type.includes('video') ? 'video' : apiModel.type.includes('image') ? 'image' : 'image')
+      : 'image';
+    return {
+      id: String(apiModel.id),
+      name,
+      provider: apiModel.provider || apiModel.company || apiModel.collections || 'unknown',
+      title: apiModel.title || name,
+      description: apiModel.description || apiModel.describe || '',
+      price,
+      type: normalizedType as 'video' | 'image' | 'audio',
+      tags,
+      thumbnail,
+      examples: apiModel.examples,
+      category: apiModel.category || apiModel.collections || 'general',
+      featured: Boolean(apiModel.featured),
+      hot: Boolean(apiModel.hot),
+      commercial: Boolean(apiModel.commercial),
+      partner: Boolean(apiModel.partner),
+    };
+  })() : models.find(m => m.provider === provider && m.name === modelName);
 
   const generationSteps = [
     'Analyzing prompt...',
@@ -411,14 +421,36 @@ const ModelDetailPage: React.FC = () => {
   // 初始化模型参数
   useEffect(() => {
     if (apiModel?.params) {
-      // 从API模型对象中获取参数
-      setModelParams(apiModel.params);
-      
-      // 初始化参数值
+      // 将后端参数结构转换为前端可渲染的 ModelParams
+      const transformed: ModelParams = {};
+      Object.entries(apiModel.params).forEach(([key, p]: any) => {
+        const backendType = String(p.type || '').toLowerCase();
+        const mapType = backendType === 'integer' ? 'INT' : backendType === 'number' ? 'FLOAT' : backendType === 'boolean' ? 'BOOLEAN' : 'STRING';
+        const param: ModelParam = {
+          type: mapType as ModelParam['type'],
+          default: p.default,
+          required: Boolean(p.required),
+        };
+        if (Array.isArray(p.range)) {
+          // 如果是枚举/离散值，作为 options 渲染
+          param.options = p.range as Array<string | number>;
+          param.display = 'select';
+        } else if (p.range && Array.isArray(p.range)) {
+          param.options = p.range as Array<string | number>;
+        }
+        transformed[key] = param;
+      });
+      setModelParams(transformed);
+
+      // 初始化参数值，优先使用 playground 中的示例
       const initialValues: Record<string, any> = {};
-      Object.entries(apiModel.params).forEach(([key, param]) => {
-        const modelParam = param as ModelParam;
-        initialValues[key] = modelParam.default;
+      const playgroundDefaults = apiModel.playground || {};
+      Object.entries(transformed).forEach(([key, param]) => {
+        if (playgroundDefaults && Object.prototype.hasOwnProperty.call(playgroundDefaults, key)) {
+          initialValues[key] = (playgroundDefaults as any)[key];
+        } else {
+          initialValues[key] = param.default;
+        }
       });
       setParamValues(initialValues);
     } else {
@@ -499,7 +531,20 @@ const ModelDetailPage: React.FC = () => {
   }
 
   const handleGenerate = async () => {
-    if (!paramValues.prompt || !paramValues.prompt.trim()) return;
+    // 必填参数校验
+    const missing: string[] = [];
+    Object.entries(modelParams).forEach(([key, cfg]) => {
+      if (cfg.required) {
+        const v = (paramValues as any)[key];
+        const isEmptyString = typeof v === 'string' && v.trim() === '';
+        const isNullish = v === undefined || v === null;
+        if (isNullish || isEmptyString) missing.push(key);
+      }
+    });
+    if (missing.length > 0) {
+      showToast(`请填写必填参数: ${missing.join(', ')}`, { type: 'error' });
+      return;
+    }
 
     setStatus('processing');
     setProgress(0);
@@ -881,7 +926,7 @@ const ModelDetailPage: React.FC = () => {
                     Use this model via API endpoint:
                   </p>
                   <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
-                    <code>POST /api/models/{model?.provider}/{model?.name}/generate</code>
+                    <code>POST /api/model/{model?.provider}/{model?.name}/generate</code>
                   </div>
                   <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#6b7280' }}>
                     Include your API key in the Authorization header and send the parameters as JSON in the request body.

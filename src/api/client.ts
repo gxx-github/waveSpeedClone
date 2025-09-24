@@ -74,9 +74,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 // Domain helpers
 export const api = {
   // Models
-  listModels: () => apiRequest<any>('/api/models', { method: 'GET' }),
-  getModelParams: (provider: string, modelName: string) => 
-    apiRequest<any>(`/api/models/${provider}/${modelName}`, { method: 'GET' }),
+  listModels: () => apiRequest<any>('/api/model', { method: 'GET' }),
 
   // API Keys (naming per backend: create/list)
   createApiKey: (name: string) =>

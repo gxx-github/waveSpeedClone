@@ -415,23 +415,34 @@ const ModelGrid = styled.div`
 // 使用统一的 ApiModel 类型定义
 
 // 将API模型转换为本地Model格式
-const convertApiModelToModel = (apiModel: ApiModel): Model => ({
-  id: String(apiModel.id),
-  name: apiModel.name,
-  provider: apiModel.provider || apiModel.company || apiModel.collections || 'unknown',
-  title: apiModel.title || apiModel.name,
-  description: apiModel.describe || apiModel.description || '',
-  // 后端价格单位不确定，做一次简单归一化（>10 视作分）
-  price: apiModel.price > 10 ? Number((apiModel.price / 100).toFixed(2)) : apiModel.price,
-  type: apiModel.type || 'image',
-  tags: (apiModel.tag && apiModel.tag.length ? apiModel.tag : []).map((t: any) => String(t)),
-  thumbnail: apiModel.index_url || apiModel.thumbnail || 'https://via.placeholder.com/600x400?text=Model',
-  category: apiModel.category || 'general',
-  featured: Boolean(apiModel.featured),
-  hot: Boolean(apiModel.hot),
-  commercial: Boolean(apiModel.commercial),
-  partner: Boolean(apiModel.partner),
-});
+const convertApiModelToModel = (apiModel: ApiModel): Model => {
+  const name = apiModel.model_name || apiModel.name || '';
+  const priceRaw = apiModel.base_price ?? apiModel.price ?? 0;
+  const price = priceRaw > 10 ? Number((priceRaw / 100).toFixed(2)) : Number(priceRaw);
+  const thumbnail = apiModel.cover_url  || '';
+  const tags = (apiModel.tags && apiModel.tags.length ? apiModel.tags : apiModel.tag && apiModel.tag.length ? apiModel.tag : [])
+    .map((t: any) => String(t));
+  const normalizedType = typeof apiModel.type === 'string'
+    ? (apiModel.type.includes('video') ? 'video' : apiModel.type.includes('image') ? 'image' : 'image')
+    : 'image';
+
+  return {
+    id: String(apiModel.id),
+    name,
+    provider: apiModel.provider || apiModel.company || apiModel.collections || 'unknown',
+    title: apiModel.title || name,
+    description: apiModel.description || apiModel.describe || '',
+    price,
+    type: normalizedType as Model['type'],
+    tags,
+    thumbnail,
+    category: apiModel.category || apiModel.collections || 'general',
+    featured: Boolean(apiModel.featured),
+    hot: Boolean(apiModel.hot),
+    commercial: Boolean(apiModel.commercial),
+    partner: Boolean(apiModel.partner),
+  };
+};
 
 const HomePage: React.FC = () => {
   const [apiModels, setApiModels] = useState<ApiModel[]>([]);

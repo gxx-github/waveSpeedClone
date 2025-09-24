@@ -193,6 +193,23 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
   };
 
   const renderField = () => {
+    // 优先处理 options/select
+    if (Array.isArray(paramConfig.options) && paramConfig.options.length > 0) {
+      return (
+        <Select
+          value={value ?? paramConfig.default}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+        >
+          {paramConfig.options.map((opt) => (
+            <option key={String(opt)} value={String(opt)}>
+              {String(opt)}
+            </option>
+          ))}
+        </Select>
+      );
+    }
+
     switch (type) {
       case 'STRING':
         if (multiline) {
@@ -321,7 +338,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
   return (
     <FormGroup>
       <Label>
-        {paramName}
+        {paramName}{paramConfig.required ? ' *' : ''}
         {tooltip && (
           <TooltipIcon data-tooltip={tooltip}>
             ℹ️

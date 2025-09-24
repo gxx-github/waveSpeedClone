@@ -15,16 +15,28 @@ const ModelCardContainer = styled(Card)`
   }
 `;
 
-const ModelImage = styled.div<{ $backgroundImage: string }>`
+const ModelImage = styled.div`
   width: 100%;
   height: 200px;
-  background-image: url(${props => props.$backgroundImage});
-  background-size: cover;
-  background-position: center;
   border-radius: 0.5rem;
   margin-bottom: 1rem;
   position: relative;
   overflow: hidden;
+  background: #0f172a;
+`;
+
+const ThumbImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`;
+
+const ThumbVideo = styled.video`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 `;
 
 const TagsContainer = styled.div`
@@ -158,9 +170,17 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, apiModel }) => {
     return undefined;
   };
 
+  const thumbnailUrl = (apiModel?.cover_url as string) || model.thumbnail;
+  const isVideo = /\.(mp4|webm|ogg)(\?|$)/i.test(thumbnailUrl);
+
   return (
     <ModelCardContainer>
-      <ModelImage $backgroundImage={model.thumbnail}>
+      <ModelImage>
+        {isVideo ? (
+          <ThumbVideo muted autoPlay loop playsInline preload="metadata" src={thumbnailUrl} />
+        ) : (
+          <ThumbImage src={thumbnailUrl} alt={model.name} loading="lazy" />
+        )}
         <TagsContainer>
           {model.tags && model.tags.length > 0 && model.tags.map((tag) => (
             <Tag key={tag} $variant={getTagVariant(tag)}>
