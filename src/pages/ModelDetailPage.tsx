@@ -402,7 +402,6 @@ const ModelDetailPage: React.FC = () => {
   }, [apiModel, provider, modelName]);
 
   const effectiveApiModel: ApiModel | undefined = apiModel || fetchedApiModel;
-console.log('effectiveApiModel', effectiveApiModel);
 
   const model = effectiveApiModel ? (() => {
     const name = effectiveApiModel.model_name || effectiveApiModel.name || '';
@@ -445,6 +444,25 @@ console.log('effectiveApiModel', effectiveApiModel);
     'https://ext.same-assets.com/2897352160/374079494.false',
     'https://ext.same-assets.com/2897352160/3894555946.false',
   ];
+
+  // 懒加载 Loading Spinner
+  const LoadingSpinner = () => (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem 0' }}>
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #667eea',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}
+      />
+      <style>
+        {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
+      </style>
+    </div>
+  );
 
   // 初始化模型参数（优先用 API 模型）
   useEffect(() => {
@@ -517,6 +535,17 @@ console.log('effectiveApiModel', effectiveApiModel);
     }
   }, [status, estimatedTime, generationSteps.length, generatedResult]);
 
+  // 在接口筛选完成之前显示懒加载
+  if (!effectiveApiModel && loadingModel) {
+    return (
+      <ModelDetailContainer>
+        <Container>
+          <LoadingSpinner />
+        </Container>
+      </ModelDetailContainer>
+    );
+  }
+
   if (!model) {
     return (
       <ModelDetailContainer>
@@ -557,29 +586,16 @@ console.log('effectiveApiModel', effectiveApiModel);
     setEstimatedTime(baseTime * durationMultiplier);
 
     try {
+      // 动态合并参数：将当前填写的所有参数传递给后端
+      const dynamicParams = { ...paramValues } as Record<string, any>;
       const payload = {
-        enable_base64_output: false,
-        guidance_scale: 3.5,
-        image: "",
-        loras: [
-          {
-            path: "strangerzonehf/Flux-Super-Realism-LoRA",
-            scale: 1
-          }
-        ],
-        num_images: 1,
-        num_inference_steps: 28,
-        output_format: "jpeg",
-        prompt: String(paramValues.prompt ?? ''),
-        seed: -1,
-        size: "1024*1024",
-        strength: 0.8,
-        url: `api/v3/${(model?.provider || 'wavespeed-ai')}/${(model?.name || '').toString()}`,
+        ...dynamicParams,
+        url: `${(model?.name || '').toString()}`,
         id: Number.isFinite(Number(model?.id)) ? Number(model?.id) : Date.now(),
-      };
+      } as Record<string, any>;
 
       console.log('Submitting order with payload:', payload);
-      const res = await api.createOrder(payload);
+      const res = await api.createOrder(payload as any);
       console.log('Order created successfully:', res);
       if(res.error){
         setStatus('error');
@@ -887,7 +903,7 @@ console.log('effectiveApiModel', effectiveApiModel);
                       onClick={handleGenerate}
                       variant="primary"
                       style={{ flex: 2 }}
-                      disabled={status === 'processing' || !paramValues.prompt?.trim()}
+                      disabled={status === 'processing'}
                     >
                       {status === 'processing' ? `Generating... ${Math.round(progress)}%` : `Run $${model?.price || 0}`}
                     </Button>
