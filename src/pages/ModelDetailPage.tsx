@@ -1,7 +1,8 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, Input, Textarea } from '../styles/GlobalStyles';
 import { api } from '../api/client';
 import DynamicParamField from '../components/DynamicParamField';
@@ -363,6 +364,8 @@ const ModelDetailPage: React.FC = () => {
   console.log('modelName', modelName);
   console.log('provider', provider);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'playground' | 'json' | 'api'>('playground');
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
@@ -564,6 +567,11 @@ const ModelDetailPage: React.FC = () => {
   }
 
   const handleGenerate = async () => {
+    if (!isAuthenticated) {
+      showToast('请先登录后再运行模型', { type: 'error' });
+      navigate('/login');
+      return;
+    }
     const missing: string[] = [];
     Object.entries(modelParams).forEach(([key, cfg]) => {
       if (cfg.required) {

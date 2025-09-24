@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { Input, Button } from '../styles/GlobalStyles';
 import ModelCard from '../components/ModelCard';
 import { ModelsSkeletonLoader, LoadingState } from '../components/LoadingStates';
-import { models } from '../data/models';
 import { api } from '../api/client';
 import type { ApiModel, Model } from '../types/models';
 
@@ -378,7 +377,7 @@ const ModelsPage: React.FC = () => {
 
   // 获取所有可用的分类和提供商
   const availableCategories = useMemo(() => {
-    const dataSource = useApiData ? apiModels.map(convertApiModelToModel) : models;
+    const dataSource = useApiData ? apiModels.map(convertApiModelToModel) : [];
     const categories = new Set(dataSource.map(model => model.type).filter(category => category));
     return Array.from(categories).sort();
   }, [useApiData, apiModels]);
@@ -386,7 +385,7 @@ const ModelsPage: React.FC = () => {
 
   // 过滤和排序模型
   const filteredAndSortedModels = useMemo(() => {
-    const dataSource = useApiData ? apiModels.map(convertApiModelToModel) : models;
+    const dataSource = useApiData ? apiModels.map(convertApiModelToModel) :  [];
     
     const filtered = dataSource.filter(model => {
       // 搜索过滤
@@ -453,17 +452,12 @@ const ModelsPage: React.FC = () => {
   };
 
   const getCategoryCount = (category: string) => {
-    const dataSource = useApiData ? apiModels.map(convertApiModelToModel) : models;
+    const dataSource = useApiData ? apiModels.map(convertApiModelToModel) : [];
     return dataSource.filter(model => model.type === category).length;
   };
 
 
-  const stats = {
-    totalModels: (useApiData ? apiModels.map(convertApiModelToModel) : models).length,
-    videoModels: (useApiData ? apiModels.map(convertApiModelToModel) : models).filter(m => m.type === 'video').length,
-    imageModels: (useApiData ? apiModels.map(convertApiModelToModel) : models).filter(m => m.type === 'image').length,
-    audioModels: (useApiData ? apiModels.map(convertApiModelToModel) : models).filter(m => m.type === 'audio').length,
-  };
+
 
   if (isLoading) {
     return (
