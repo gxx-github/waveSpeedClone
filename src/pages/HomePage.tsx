@@ -433,7 +433,7 @@ const convertApiModelToModel = (apiModel: ApiModel): Model => {
     title: apiModel.title || name,
     description: apiModel.description || apiModel.describe || '',
     price,
-    type: apiModel.type ,
+    type: apiModel.type || '',
 
     tags,
     thumbnail,

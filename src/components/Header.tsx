@@ -302,18 +302,17 @@ const Header: React.FC = () => {
                     <DropHeader>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <strong>{user?.name || user?.email}</strong>
-                        <Badge>Bronze</Badge>
                       </div>
-                      <SmallText>{user?.email ?? 'user@example.com'}</SmallText>
-                      <div style={{ marginTop: '0.5rem', fontWeight: 700 }}>$ 0.85 available</div>
+                      {/* <SmallText>{user?.email ?? 'user@example.com'}</SmallText> */}
+                      <div style={{ marginTop: '0.5rem', fontWeight: 700 }}>$ -- available</div>
                     </DropHeader>
                     <Divider />
                     <MenuList>
                       <MenuItem to="/billing">Billing</MenuItem>
                       <MenuItem to="/api-keys">API Keys</MenuItem>
-                      <MenuButton onClick={() => setOpen(false)}>Create Team</MenuButton>
+                      {/* <MenuButton onClick={() => setOpen(false)}>Create Team</MenuButton>
                       <MenuButton onClick={() => setOpen(false)}>My Inspiration</MenuButton>
-                      <MenuButton onClick={() => setOpen(false)}>Support</MenuButton>
+                      <MenuButton onClick={() => setOpen(false)}>Support</MenuButton> */}
                       <MenuButton onClick={() => { toggleTheme(); setOpen(false); }}>
                         <span>Theme</span>
                         <span>{isDark ? 'Dark' : 'Light'}</span>

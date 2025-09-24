@@ -359,7 +359,9 @@ const ReadmeContent = styled.div`
 `;
 
 const ModelDetailPage: React.FC = () => {
-  const { provider, model: modelName } = useParams<{ provider: string; model: string }>();
+  const { provider, model: modelName, subtype } = useParams<{ provider: string; model: string; subtype?: string }>();
+  console.log('modelName', modelName);
+  console.log('provider', provider);
   const location = useLocation();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'playground' | 'json' | 'api'>('playground');
@@ -387,7 +389,8 @@ const ModelDetailPage: React.FC = () => {
           const arr: ApiModel[] = Array.isArray(list) ? list : (list?.models || []);
           const match = arr.find((m) => {
             const name = (m.model_name || m.name || '').toString();
-            return name === `${provider}/${modelName}` 
+            const routeFullName = subtype ? `${provider}/${modelName}/${subtype}` : `${provider}/${modelName}`;
+            return name === routeFullName;
           });
           console.log('match', match);
           if (match) setFetchedApiModel(match);
@@ -399,7 +402,7 @@ const ModelDetailPage: React.FC = () => {
       };
       fetchAndMatch();
     }
-  }, [apiModel, provider, modelName]);
+  }, [apiModel, provider, modelName, subtype]);
 
   const effectiveApiModel: ApiModel | undefined = apiModel || fetchedApiModel;
 
@@ -755,7 +758,7 @@ const ModelDetailPage: React.FC = () => {
       case 'completed':
         return (
           <>
-            {generatedResult && (
+            {/* {generatedResult && (
               <GenerationResult>
                 {model.type === 'video' ? (
                   <GeneratedVideo controls autoPlay muted>
@@ -766,15 +769,15 @@ const ModelDetailPage: React.FC = () => {
                   <GeneratedImage src={generatedResult} alt="Generated content" />
                 )}
               </GenerationResult>
-            )}
+            )} */}
             <StatusIndicator $status="completed">
               <span>●</span>
               Generation completed successfully!
             </StatusIndicator>
-            <DownloadButton onClick={handleDownload} variant="secondary">
+            {/* <DownloadButton onClick={handleDownload} variant="secondary">
               <span>⬇️</span>
               Download Result
-            </DownloadButton>
+            </DownloadButton> */}
           </>
         );
 
@@ -807,7 +810,7 @@ const ModelDetailPage: React.FC = () => {
         <Breadcrumbs>
           <Link to="/">Home</Link> / <Link to="/models">Explore</Link> /
           <Link to="/collections/minimax">HAILUO VIDEO MODELS</Link> /
-          {modelName}
+          {subtype ? `${modelName}/${subtype}` : modelName}
         </Breadcrumbs>
 
         <ModelHeader>

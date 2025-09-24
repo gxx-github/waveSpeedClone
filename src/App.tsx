@@ -18,7 +18,8 @@ import BillingPage from './pages/BillingPage';
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   console.log('isAuthenticated', isAuthenticated);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  return <>{children}</>
+  // return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 // Main App Routes
@@ -32,6 +33,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/auth/callback" element={<OAuthCallback />} />
         <Route path="/auth/google/callback" element={<OAuthCallback />} />
         <Route path="/models/:provider/:model" element={<ModelDetailPage />} />
+        <Route path="/models/:provider/:model/:subtype" element={<ModelDetailPage />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />

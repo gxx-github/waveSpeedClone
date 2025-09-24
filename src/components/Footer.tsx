@@ -146,16 +146,15 @@ const Footer: React.FC = () => {
             <SectionTitle>Navigation</SectionTitle>
             <FooterLink to="/">Home</FooterLink>
             <FooterLink to="/models">Explore</FooterLink>
-            <FooterLink to="/contact">About us</FooterLink>
           </FooterSection>
 
           <FooterSection>
             <SectionTitle>Resources</SectionTitle>
             <ExternalLink href="/docs">Documentation</ExternalLink>
-            <ExternalLink href="/blog">Blog</ExternalLink>
+            {/* <ExternalLink href="/blog">Blog</ExternalLink>
             <SectionTitle style={{ marginTop: '1rem' }}>Github</SectionTitle>
             <ExternalLink href="https://github.com/WaveSpeedAI/agent-mcp-lab">Agent MCP Lab</ExternalLink>
-            <ExternalLink href="https://github.com/WaveSpeedAI/mcp-server">MCP Server</ExternalLink>
+            <ExternalLink href="https://github.com/WaveSpeedAI/mcp-server">MCP Server</ExternalLink> */}
           </FooterSection>
 
           <FooterSection>
@@ -163,20 +162,20 @@ const Footer: React.FC = () => {
             <ExternalLink href="mailto:support@wavespeed.ai">support@wavespeed.ai</ExternalLink>
           </FooterSection>
 
-          <FooterSection>
+          {/* <FooterSection>
             <SectionTitle>Models</SectionTitle>
             <FooterLink to="/collections/bytedance">Seedance 1.0</FooterLink>
             <FooterLink to="/collections/wan">Wan 2.1</FooterLink>
             <FooterLink to="/collections/flux">FLUX 1.0</FooterLink>
             <FooterLink to="/collections/kling">KLING</FooterLink>
             <FooterLink to="/collections/minimax">Hailuo 02</FooterLink>
-          </FooterSection>
+          </FooterSection> */}
         </FooterMain>
 
         <FooterBottom>
           © 2025 WaveSpeedAI. All Rights Reserved.{' '}
-          <Link to="/terms">Terms of Service</Link> and{' '}
-          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="">Terms of Service</Link> and{' '}
+          <Link to="">Privacy Policy</Link>
         </FooterBottom>
       </FooterContent>
     </FooterContainer>
