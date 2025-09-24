@@ -31,7 +31,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/models" element={<ModelsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<OAuthCallback />} />
-        <Route path="/api/auth/google/callback" element={<OAuthCallback />} />
+        <Route path="/auth/google/callback" element={<OAuthCallback />} />
         <Route path="/test-auth" element={<TestAuth />} />
         <Route path="/auth-diagnostic" element={<AuthDiagnostic />} />
         <Route path="/models/:provider/:model" element={<ModelDetailPage />} />
