@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // 重定向到谷歌OAuth授权页面，并显式告知后端回跳到前端的回调路由
       // 使用相对路径，让请求发送到当前域名
       const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
       const authUrl = `${apiBase}/api/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
       window.location.href = authUrl;
     } catch (error) {
