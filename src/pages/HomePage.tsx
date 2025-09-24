@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { Button } from '../styles/GlobalStyles';
 import ModelCard from '../components/ModelCard';
-import { models, modelCollections, videoEffects } from '../data/models';
 import { api } from '../api/client';
 import type { Model, ApiModel } from '../types/models';
 
@@ -446,7 +445,7 @@ const HomePage: React.FC = () => {
         setLoading(true);
         const response = await api.listModels();
         console.log('API Models Response:', response);
-        
+
         // 根据实际API响应结构调整
         if (response && Array.isArray(response)) {
           setApiModels(response);
@@ -460,7 +459,7 @@ const HomePage: React.FC = () => {
         console.error('Failed to fetch models:', err);
         setError('Failed to load models');
         // 使用本地数据作为后备
-        setApiModels(models.filter(model => model.featured).slice(0, 8));
+        setApiModels([]);
       } finally {
         setLoading(false);
       }
@@ -470,16 +469,16 @@ const HomePage: React.FC = () => {
   }, []);
 
   // 合并API数据和本地数据
-  const featuredModels: Model[] = apiModels.length > 0 
+  const featuredModels: Model[] = apiModels.length > 0
     ? apiModels.slice(0, 8).map(convertApiModelToModel)
-    : models.filter(model => model.featured).slice(0, 8);
+    : [];
 
   return (
     <HomePageContainer>
       <HeroSection>
-     <VideoDom>
-     <video src="https://d1q70pf5vjeyhc.wavespeed.ai/media/videos/1752735441692270409_ABJFCxuq.mp4" className="absolute top-0 left-0 w-full h-full object-cover" autoPlay={true}  poster="https://d1q70pf5vjeyhc.wavespeed.ai/media/images/1752735588486465176_uELKGDzv.png" data-sentry-component="VideoBanner" data-sentry-source-file="home.tsx"></video>
-     </VideoDom>
+        <VideoDom>
+          <video src="https://d1q70pf5vjeyhc.wavespeed.ai/media/videos/1752735441692270409_ABJFCxuq.mp4" className="absolute top-0 left-0 w-full h-full object-cover" autoPlay={true} poster="https://d1q70pf5vjeyhc.wavespeed.ai/media/images/1752735588486465176_uELKGDzv.png" data-sentry-component="VideoBanner" data-sentry-source-file="home.tsx"></video>
+        </VideoDom>
         <HeroContent>
           <HeroTitle>Ultimate AI Media Generation Platform</HeroTitle>
           <HeroSubtitle>
@@ -508,15 +507,15 @@ const HomePage: React.FC = () => {
           ) : null}
           <ModelGrid>
             {featuredModels.map((model) => {
-              const apiModel = apiModels.find(apiModel => 
-                apiModel.id === model.id || 
+              const apiModel = apiModels.find(apiModel =>
+                apiModel.id === model.id ||
                 (apiModel.name === model.name && (apiModel.provider === model.provider || apiModel.company === model.provider))
               );
-              
+
               return (
-                <ModelCard 
-                  key={model.id} 
-                  model={model} 
+                <ModelCard
+                  key={model.id}
+                  model={model}
                   apiModel={apiModel}
                 />
               );
@@ -525,7 +524,7 @@ const HomePage: React.FC = () => {
         </Container>
       </Section>
 
-      <FeatureSection>
+      {/* <FeatureSection>
         <Container>
           <SectionTitle>Unleash the Power of AI with Speed</SectionTitle>
           <p style={{ textAlign: 'center', marginBottom: '3rem', color: '#64748b' }}>
@@ -564,9 +563,9 @@ const HomePage: React.FC = () => {
             </FeatureCard>
           </FeatureGrid>
         </Container>
-      </FeatureSection>
+      </FeatureSection> */}
 
-      <CollectionsSection>
+      {/* <CollectionsSection>
         <Container>
           <SectionTitle>Model Groups</SectionTitle>
           <CollectionsGrid>
@@ -578,8 +577,8 @@ const HomePage: React.FC = () => {
             ))}
           </CollectionsGrid>
         </Container>
-      </CollectionsSection>
-
+      </CollectionsSection> */}
+      {/* 
       <VideoEffectsSection>
         <Container>
           <EffectsHeader>
@@ -613,7 +612,7 @@ const HomePage: React.FC = () => {
             View all
           </ViewAllButton>
         </Container>
-      </VideoEffectsSection>
+      </VideoEffectsSection> */}
     </HomePageContainer>
   );
 };
