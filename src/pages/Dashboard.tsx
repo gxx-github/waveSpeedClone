@@ -110,6 +110,17 @@ const UsageTable = styled.div`
   overflow: hidden;
 `;
 
+const UsageTableBody = styled.div`
+  max-height: 280px;
+  overflow-y: auto;
+`;
+
+const EmptyState = styled.div`
+  padding: 1.5rem;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
 const TableHeader = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
@@ -123,6 +134,7 @@ const TableRow = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
+
 
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
@@ -392,6 +404,14 @@ const DateRangeInput = styled(Input)`
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  // Usage date range (default last 30 days, UTC days)
+  const [usageDateRange, setUsageDateRange] = useState<{ start: string; end: string }>(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 29);
+    const toISO = (d: Date) => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+    return { start: toISO(start), end: toISO(end) };
+  });
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     id: '',          // uuid
@@ -407,6 +427,7 @@ const Dashboard: React.FC = () => {
     const load = async () => {
       try {
         await api.listModels();
+        await fetchUsage();
         await fetchOrders();
       } catch (e) {
         // ignore for now; UI can still show local data
@@ -418,32 +439,74 @@ const Dashboard: React.FC = () => {
   }, []);
 
 
-  // Mock data based on the image
-  const usageData = {
-    totalPredictions: 1,
-    totalCost: 0.15,
-    modelsUsed: [
-      { 
-        name: 'wavespeed-ai/wan-2.2/i2v-480p', 
-        requests: 1, 
-        cost: 0.1500 
+  // Usage data from API
+  const [usageData, setUsageData] = useState<{ totalPredictions: number; totalCost: number; modelsUsed: Array<{ name: string; requests: number; cost: number }>}>({
+    totalPredictions: 0,
+    totalCost: 0,
+    modelsUsed: []
+  });
+
+  const [usageDaily, setUsageDaily] = useState<Array<{ date: string; value: number }>>([]);
+
+  const fetchUsage = async (range?: { start?: string; end?: string }) => {
+    try {
+      const res: any = await api.getUserUsage();
+      // Normalize API response
+      const totalPredictions = Number(res?.total || res?.totalPredictions || res?.count || 0);
+      const totalCost = Number(res?.total_cost || res?.totalCost || res?.cost || 0);
+      const items: any[] = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : (res?.data?.items || []));
+      const modelsUsed = items.map((it: any) => ({
+        name: String(it.model || it.name || it.model_name || ''),
+        requests: Number(it.count || it.requests || it.request_count || 0),
+        cost: Number(it.cost || it.total_cost || 0),
+      }));
+      setUsageData({ totalPredictions, totalCost, modelsUsed });
+
+      // Daily timeseries if provided
+      const daily: any[] = Array.isArray(res?.daily)
+        ? res.daily
+        : Array.isArray(res?.data?.daily)
+        ? res.data.daily
+        : [];
+      if (daily.length > 0) {
+        const normalized = daily.map((d: any) => ({
+          date: String(d.date || d.day || ''),
+          value: Number(d.value || d.cost || d.total || 0),
+        }));
+        setUsageDaily(normalized);
+      } else {
+        setUsageDaily([]);
       }
-    ]
+    } catch (err: any) {
+      console.error('Failed to fetch usage:', err);
+    }
   };
 
-  const chartData = [
-    { date: '08/31', value: 0 },
-    { date: '09/03', value: 0 },
-    { date: '09/06', value: 0 },
-    { date: '09/09', value: 0 },
-    { date: '09/12', value: 0.14 },
-    { date: '09/15', value: 0 },
-    { date: '09/18', value: 0 },
-    { date: '09/21', value: 0 },
-    { date: '09/24', value: 0 },
-    { date: '09/27', value: 0 },
-    { date: '09/30', value: 0 }
-  ];
+  // Build chart data from daily or generate buckets from range
+  const chartData = (() => {
+    const start = new Date(usageDateRange.start);
+    const end = new Date(usageDateRange.end);
+    const dayMs = 24 * 60 * 60 * 1000;
+    const fmt = (d: Date) => `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+    const buckets: Record<string, number> = {};
+    for (let t = start.getTime(); t <= end.getTime(); t += dayMs) {
+      const d = new Date(t);
+      buckets[fmt(d)] = 0;
+    }
+    if (usageDaily.length > 0) {
+      usageDaily.forEach((d) => {
+        // support input as YYYY-MM-DD or MM/DD
+        const dateStr = /\d{4}-\d{2}-\d{2}/.test(d.date)
+          ? (() => {
+              const dd = new Date(d.date);
+              return fmt(new Date(Date.UTC(dd.getFullYear(), dd.getMonth(), dd.getDate())));
+            })()
+          : d.date;
+        if (buckets[dateStr] !== undefined) buckets[dateStr] += d.value;
+      });
+    }
+    return Object.entries(buckets).map(([date, value]) => ({ date, value }));
+  })();
 
   const fetchOrders = async () => {
     try {
@@ -557,11 +620,22 @@ const Dashboard: React.FC = () => {
               <UsageTitle>Usage</UsageTitle>
               <UsageSubtitle>See usage statistics per model</UsageSubtitle>
             </div>
-            <UsageDateRangeContainer>
+            {/* <UsageDateRangeContainer onClick={() => {
+              const s = prompt('开始时间 (YYYY-MM-DD)', usageDateRange.start.slice(0,10));
+              const e = prompt('结束时间 (YYYY-MM-DD)', usageDateRange.end.slice(0,10));
+              if (s && e) {
+                const startISO = new Date(`${s}T00:00:00Z`).toISOString();
+                const endISO = new Date(`${e}T00:00:00Z`).toISOString();
+                setUsageDateRange({ start: startISO, end: endISO });
+                fetchUsage({ start: startISO, end: endISO });
+              }
+            }}>
               <span>📅</span>
-              <UsageDateRangeText>Sep 01, 2025 – Sep 30, 2025</UsageDateRangeText>
+              <UsageDateRangeText>
+                {new Date(usageDateRange.start).toLocaleDateString()} – {new Date(usageDateRange.end).toLocaleDateString()}
+              </UsageDateRangeText>
               <CloseIcon>✕</CloseIcon>
-            </UsageDateRangeContainer>
+            </UsageDateRangeContainer> */}
           </UsageHeader>
 
           <UsageContent>
@@ -578,19 +652,25 @@ const Dashboard: React.FC = () => {
                   <UsageTableCell style={{ fontWeight: 600 }}>Request Count</UsageTableCell>
                   <UsageTableCell style={{ fontWeight: 600 }}>Cost</UsageTableCell>
                 </TableHeader>
-                {usageData.modelsUsed.map((model, index) => (
-                  <TableRow key={index}>
-                    <UsageTableCell>
-                      <ModelLink href="#">{model.name}</ModelLink>
-                    </UsageTableCell>
-                    <UsageTableCell>{model.requests}</UsageTableCell>
-                    <UsageTableCell>${model.cost.toFixed(4)}</UsageTableCell>
-                  </TableRow>
-                ))}
+                {usageData.modelsUsed.length === 0 ? (
+                  <EmptyState>No usage yet</EmptyState>
+                ) : (
+                  <UsageTableBody>
+                    {usageData.modelsUsed.map((model, index) => (
+                      <TableRow key={index}>
+                        <UsageTableCell>
+                          <ModelLink href="#">{model.name}</ModelLink>
+                        </UsageTableCell>
+                        <UsageTableCell>{model.requests}</UsageTableCell>
+                        <UsageTableCell>${model.cost.toFixed(4)}</UsageTableCell>
+                      </TableRow>
+                    ))}
+                  </UsageTableBody>
+                )}
               </UsageTable>
             </UsagePerModelCard>
 
-            {/* Usage breakdown - Right side */}
+            {/* Usage breakdown - Right side
             <UsageBreakdownCard>
               <UsageBreakdownTitle>Usage breakdown</UsageBreakdownTitle>
               
@@ -618,7 +698,7 @@ const Dashboard: React.FC = () => {
                   ))}
                 </ChartBars>
               </ChartContainer>
-            </UsageBreakdownCard>
+            </UsageBreakdownCard> */}
           </UsageContent>
         </UsageSection>
 
