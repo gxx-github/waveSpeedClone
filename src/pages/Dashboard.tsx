@@ -392,15 +392,58 @@ const inferExtensionFromUrl = (url: string): string => {
   return '';
 };
 
+const formatDateTime = (input: string): string => {
+  try {
+    if (!input) return '--';
+    let ts: number | null = null;
+    // numeric timestamp as seconds or milliseconds
+    if (/^\d+$/.test(input)) {
+      const n = Number(input);
+      ts = n < 1e12 ? n * 1000 : n;
+    } else {
+      const parsed = Date.parse(input);
+      if (!Number.isNaN(parsed)) ts = parsed;
+    }
+    if (ts === null) return String(input);
+    const d = new Date(ts);
+    const pad = (v: number) => String(v).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const HH = pad(d.getHours());
+    const MM = pad(d.getMinutes());
+    const SS = pad(d.getSeconds());
+    return `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`;
+  } catch {
+    return String(input);
+  }
+};
+
 const downloadFromUrl = async (url: string, filename?: string) => {
   try {
     const response = await fetch(url, { mode: 'cors' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
+    let finalName = filename;
+    if (!finalName) {
+      const cd = response.headers.get('content-disposition') || '';
+      const cdMatch = cd.match(/filename\*=UTF-8''([^;\n]+)|filename="?([^";\n]+)"?/i);
+      const fromHeader = cdMatch ? decodeURIComponent(cdMatch[1] || cdMatch[2]) : '';
+      if (fromHeader) finalName = fromHeader;
+    }
+    if (!finalName) {
+      try {
+        const u = new URL(url, window.location.href);
+        const basename = decodeURIComponent((u.pathname.split('/').pop() || '').trim());
+        finalName = basename || 'download';
+      } catch {
+        finalName = 'download';
+      }
+    }
     const a = document.createElement('a');
     a.href = objectUrl;
-    a.download = filename || 'download';
+    a.download = finalName;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -419,6 +462,7 @@ const downloadFromUrl = async (url: string, filename?: string) => {
 const ActionIcons = styled.div`
   display: flex;
   gap: 0.5rem;
+  position: relative;
 `;
 
 const ActionIcon = styled.button`
@@ -434,6 +478,47 @@ const ActionIcon = styled.button`
     background: ${({ theme }) => theme.colors.surface};
     color: ${({ theme }) => theme.colors.primary};
   }
+`;
+
+const ConfirmTip = styled.div`
+  position: absolute;
+  right: 0;
+  top: -58px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 20;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.text};
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    right: 14px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid ${({ theme }) => theme.colors.surface};
+    filter: drop-shadow(0 -1px 0 ${({ theme }) => theme.colors.border});
+  }
+`;
+
+const ConfirmButton = styled(Button)`
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+`;
+
+const ConfirmText = styled.span`
+  color: ${({ theme }) => theme.colors.text};
+  font-weight: 500;
 `;
 
 const DateRangeInput = styled(Input)`
@@ -452,7 +537,7 @@ const Dashboard: React.FC = () => {
     const toISO = (d: Date) => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
     return { start: toISO(start), end: toISO(end) };
   });
-  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     id: '',          // uuid
     model: '',       // model_id
@@ -460,10 +545,11 @@ const Dashboard: React.FC = () => {
     endDate: '',     // ISO string
     status: 'all'
   });
-  const [orders, setOrders] = useState<Array<{ id: string; model: string; status: 'created' | 'processing' | 'completed' | 'failed' | string; output?: string | null; created: string }>>([]);
+  const [orders, setOrders] = useState<Array<{ id: string; orderId?: number; model: string; status: 'created' | 'processing' | 'completed' | 'failed' | string; output?: string | null; created: string }>>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const [confirmDeleteFor, setConfirmDeleteFor] = useState<string | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -576,7 +662,8 @@ const Dashboard: React.FC = () => {
       const totalCount = Number(res?.total || res?.data?.total || res?.count || items.length);
 
       const normalized = items.map((it) => ({
-        id: String(it.uuid || it.id || it.order_id || ''),
+        id: String(it.id ),
+        orderId:it.uuid,
         model: String(it.model || it.model_id || it.url || it.api || ''),
         status: String(it.status || 'processing'),
         output: it.output || null,
@@ -585,7 +672,7 @@ const Dashboard: React.FC = () => {
 
       setOrders(normalized);
       setTotal(totalCount);
-      setSelectedRequests([]);
+      setSelectedId(null);
     } catch (err: any) {
       let errorMessage = err?.message || '获取订单失败';
       try {
@@ -602,38 +689,34 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRequestSelect = (requestId: string) => {
-    setSelectedRequests(prev => 
-      prev.includes(requestId) 
-        ? prev.filter(id => id !== requestId)
-        : [...prev, requestId]
-    );
+    setSelectedId(prev => (prev === requestId ? null : requestId));
   };
 
   const handleSelectAll = () => {
-    if (selectedRequests.length === orders.length) {
-      setSelectedRequests([]);
-    } else {
-      setSelectedRequests(orders.map((r) => r.id));
-    }
+    // 单选模式下，表头复选框切换为清空选择
+    setSelectedId(null);
   };
 
-  const handleDownload = () => {
-    if (selectedRequests.length === 0) {
-      alert('请先选择要下载的请求');
+  const handleDownload = async () => {
+    if (!selectedId) {
+      showToast('请先选择一条记录', { type: 'info' });
       return;
     }
-    console.log('Downloading requests:', selectedRequests);
+    const req = orders.find(o => o.id === selectedId);
+    if (!req || !req.output) {
+      showToast('该记录没有可下载的输出', { type: 'info' });
+      return;
+    }
+    // 优先使用文件本名，其次再回退到推断扩展名
+    await downloadFromUrl(String(req.output));
   };
 
-  const handleDelete = () => {
-    if (selectedRequests.length === 0) {
-      alert('请先选择要删除的请求');
+  const handleDelete = async () => {
+    if (!selectedId) {
+      showToast('请先选择一条记录', { type: 'info' });
       return;
     }
-    if (confirm(`确定要删除 ${selectedRequests.length} 个请求吗？`)) {
-      console.log('Deleting requests:', selectedRequests);
-      setSelectedRequests([]);
-    }
+    setConfirmDeleteFor(selectedId);
   };
 
   const handleFilterChange = (key: string, value: string) => {
@@ -814,7 +897,7 @@ const Dashboard: React.FC = () => {
               <TableCell>
                 <Checkbox 
                   type="checkbox" 
-                  checked={orders.length > 0 && selectedRequests.length === orders.length}
+                  checked={false}
                   onChange={handleSelectAll}
                 />
               </TableCell>
@@ -831,12 +914,12 @@ const Dashboard: React.FC = () => {
                 <TableCell>
                   <Checkbox 
                     type="checkbox" 
-                    checked={selectedRequests.includes(request.id)}
+                    checked={selectedId === request.id}
                     onChange={() => handleRequestSelect(request.id)}
                   />
                 </TableCell>
                 <TableCell>
-                  <ModelLink href="#">{request.id}</ModelLink>
+                  <ModelLink href="#">{request.orderId}</ModelLink>
                 </TableCell>
                 <TableCell>
                   <ModelLink href="#">{request.model}</ModelLink>
@@ -855,17 +938,42 @@ const Dashboard: React.FC = () => {
                     )
                   ) : null}
                 </TableCell>
-                <TableCell>{request.created}</TableCell>
+                <TableCell>{formatDateTime(request.created)}</TableCell>
                 <TableCell>
                   <ActionIcons>
                     {/* <ActionIcon title="Share">📤</ActionIcon> */}
                     <ActionIcon title="Download" onClick={async () => {
                       if (!request.output) return;
-                      const ext = inferExtensionFromUrl(String(request.output)) || (isVideoUrl(String(request.output)) ? '.mp4' : '.png');
-                      const filename = `${request.id}${ext}`;
-                      await downloadFromUrl(String(request.output), filename);
+                      await downloadFromUrl(String(request.output));
                     }}>⬇️</ActionIcon>
-                    <ActionIcon title="Delete">🗑️</ActionIcon>
+                    <ActionIcon title="Delete" onClick={() => setConfirmDeleteFor(request.id)}>🗑️</ActionIcon>
+                    {confirmDeleteFor === request.id && (
+                      <ConfirmTip>
+                        <ConfirmText>确认删除？</ConfirmText>
+                        <ConfirmButton variant="secondary" onClick={() => setConfirmDeleteFor(null)}>取消</ConfirmButton>
+                        <ConfirmButton variant="primary" onClick={async () => {
+                          try {
+                            const numericId = Number(request.id);
+                            await api.deleteOrder(numericId);
+                            showToast('删除成功', { type: 'success' });
+                            setConfirmDeleteFor(null);
+                            fetchOrders();
+                          } catch (err: any) {
+                            let errorMessage = err?.message || '删除失败';
+                            try {
+                              const raw = String(err?.message || '');
+                              const jsonMatch = raw.match(/\{[\s\S]*\}$/);
+                              if (jsonMatch) {
+                                const parsed = JSON.parse(jsonMatch[0]);
+                                if (parsed?.message) errorMessage = parsed.message;
+                              }
+                            } catch {}
+                            showToast(`错误: ${errorMessage}`, { type: 'error' });
+                            setConfirmDeleteFor(null);
+                          }
+                        }}>确定</ConfirmButton>
+                      </ConfirmTip>
+                    )}
                   </ActionIcons>
                 </TableCell>
               </TableDataRow>
@@ -873,7 +981,7 @@ const Dashboard: React.FC = () => {
           </RequestsTable>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', color: '#6b7280', fontSize: '0.9rem' }}>
             <div>
-              Showing {(orders.length === 0) ? 0 : ((page - 1) * pageSize + 1)} to {Math.min(page * pageSize, total)} of {total} results
+              Showing {(orders.length === 0) ? 0 : ((page - 1) * pageSize + 1)} to {Math.min(page * pageSize, total)} of {total} results 
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Previous</Button>
