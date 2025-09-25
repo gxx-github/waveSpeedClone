@@ -386,6 +386,36 @@ const OutputVideo = styled.video`
 
 const isVideoUrl = (url: string): boolean => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
 
+const inferExtensionFromUrl = (url: string): string => {
+  const match = url.match(/\.([a-zA-Z0-9]+)(\?.*)?$/);
+  if (match && match[1]) return `.${match[1].toLowerCase()}`;
+  return '';
+};
+
+const downloadFromUrl = async (url: string, filename?: string) => {
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename || 'download';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch (e) {
+    const a = document.createElement('a');
+    a.href = url;
+    if (filename) a.download = filename;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+};
+
 const ActionIcons = styled.div`
   display: flex;
   gap: 0.5rem;
@@ -828,8 +858,13 @@ const Dashboard: React.FC = () => {
                 <TableCell>{request.created}</TableCell>
                 <TableCell>
                   <ActionIcons>
-                    <ActionIcon title="Share">📤</ActionIcon>
-                    <ActionIcon title="Download">⬇️</ActionIcon>
+                    {/* <ActionIcon title="Share">📤</ActionIcon> */}
+                    <ActionIcon title="Download" onClick={async () => {
+                      if (!request.output) return;
+                      const ext = inferExtensionFromUrl(String(request.output)) || (isVideoUrl(String(request.output)) ? '.mp4' : '.png');
+                      const filename = `${request.id}${ext}`;
+                      await downloadFromUrl(String(request.output), filename);
+                    }}>⬇️</ActionIcon>
                     <ActionIcon title="Delete">🗑️</ActionIcon>
                   </ActionIcons>
                 </TableCell>
