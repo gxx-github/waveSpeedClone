@@ -313,7 +313,7 @@ const RequestsTable = styled.div`
 
 const TableHeaderRow = styled.div`
   display: grid;
-  grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 40px 2fr 2fr 1fr 120px 2fr 140px;
   background: ${({ theme }) => theme.colors.surface};
   font-weight: 600;
   font-size: 0.9rem;
@@ -322,7 +322,7 @@ const TableHeaderRow = styled.div`
 
 const TableDataRow = styled.div`
   display: grid;
-  grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 40px 2fr 2fr 1fr 120px 2fr 140px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
 
   &:hover {
@@ -336,6 +336,7 @@ const TableCell = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};
   display: flex;
   align-items: center;
+  min-width: 0;
 `;
 
 const Checkbox = styled.input`
@@ -375,6 +376,15 @@ const OutputPreview = styled.img`
   border-radius: 0.5rem;
   object-fit: cover;
 `;
+
+const OutputVideo = styled.video`
+  width: 40px;
+  height: 40px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+`;
+
+const isVideoUrl = (url: string): boolean => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
 
 const ActionIcons = styled.div`
   display: flex;
@@ -421,6 +431,9 @@ const Dashboard: React.FC = () => {
     status: 'all'
   });
   const [orders, setOrders] = useState<Array<{ id: string; model: string; status: 'created' | 'processing' | 'completed' | 'failed' | string; output?: string | null; created: string }>>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -437,6 +450,10 @@ const Dashboard: React.FC = () => {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [page, pageSize]);
 
 
   // Usage data from API
@@ -511,8 +528,8 @@ const Dashboard: React.FC = () => {
   const fetchOrders = async () => {
     try {
       const params: any = {
-        page: 1,
-        page_size: 10,
+        page,
+        page_size: pageSize,
       };
       if (filters.id) params.uuid = filters.id.trim();
       if (filters.model) params.model_id = filters.model.trim();
@@ -526,6 +543,7 @@ const Dashboard: React.FC = () => {
         : Array.isArray(res)
         ? res
         : (res?.data?.items || []);
+      const totalCount = Number(res?.total || res?.data?.total || res?.count || items.length);
 
       const normalized = items.map((it) => ({
         id: String(it.uuid || it.id || it.order_id || ''),
@@ -536,6 +554,7 @@ const Dashboard: React.FC = () => {
       }));
 
       setOrders(normalized);
+      setTotal(totalCount);
       setSelectedRequests([]);
     } catch (err: any) {
       let errorMessage = err?.message || '获取订单失败';
@@ -772,7 +791,7 @@ const Dashboard: React.FC = () => {
               <TableCell>ID</TableCell>
               <TableCell>Model</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Outputs</TableCell>
+              <TableCell style={{ justifyContent: 'center' }}>Outputs</TableCell>
               <TableCell>Created</TableCell>
               <TableCell>Action</TableCell>
             </TableHeaderRow>
@@ -797,8 +816,14 @@ const Dashboard: React.FC = () => {
                     {request.status}
                   </StatusBadge>
                 </TableCell>
-                <TableCell>
-                  {request.output ? <OutputPreview src={request.output} alt="Generated output" /> : null}
+                <TableCell style={{ justifyContent: 'center' }}>
+                  {request.output ? (
+                    isVideoUrl(String(request.output)) ? (
+                      <OutputVideo src={String(request.output)} muted playsInline controls={false} />
+                    ) : (
+                      <OutputPreview src={String(request.output)} alt="Generated output" />
+                    )
+                  ) : null}
                 </TableCell>
                 <TableCell>{request.created}</TableCell>
                 <TableCell>
@@ -811,6 +836,25 @@ const Dashboard: React.FC = () => {
               </TableDataRow>
             ))}
           </RequestsTable>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', color: '#6b7280', fontSize: '0.9rem' }}>
+            <div>
+              Showing {(orders.length === 0) ? 0 : ((page - 1) * pageSize + 1)} to {Math.min(page * pageSize, total)} of {total} results
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Previous</Button>
+              <Input style={{ width: 48, textAlign: 'center' }} value={page} onChange={(e) => {
+                const v = parseInt(e.target.value || '1', 10);
+                if (!Number.isNaN(v)) setPage(Math.max(1, v));
+              }} />
+              <Button variant="secondary" onClick={() => fetchOrders()}>Go</Button>
+              <Button variant="secondary" onClick={() => setPage((p) => (p * pageSize < total ? p + 1 : p))} disabled={page * pageSize >= total}>Next</Button>
+              <FilterSelect value={pageSize} onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); }}>
+                <option value={10}>10/page</option>
+                <option value={20}>20/page</option>
+                <option value={50}>50/page</option>
+              </FilterSelect>
+            </div>
+          </div>
         </RequestsSection>
       </Container>
     </DashboardContainer>
