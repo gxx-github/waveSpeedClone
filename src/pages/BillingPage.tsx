@@ -189,7 +189,7 @@ const Small = styled.span`
 
 const BillingPage: React.FC = () => {
   const { user, fetchUserInfo, isAuthenticated } = useAuth();
-  const balance = 0.85;
+  const [balance, setBalance] = useState<number>(0);
   const [tab, setTab] = useState<'topup' | 'billing'>('topup');
   const [amount, setAmount] = useState<'10' | '50' | '100' | 'custom'>('custom');
   const [customAmount, setCustomAmount] = useState(2);
@@ -198,10 +198,21 @@ const BillingPage: React.FC = () => {
 
   // 获取用户信息
   useEffect(() => {
-    if (isAuthenticated && !user) {
-      fetchUserInfo().catch(console.error);
-    }
-  }, [isAuthenticated, user, fetchUserInfo]);
+    const load = async () => {
+      try {
+        if (isAuthenticated && !user) {
+          await fetchUserInfo();
+        }
+        const me = await api.me() as any;
+        // 兼容多种字段名：balance / account_balance / credits 等
+        const b = Number(me?.balance ?? me?.account_balance ?? me?.credits ?? 0);
+        setBalance(isFinite(b) ? b : 0);
+      } catch (e) {
+        // 保持静默失败，UI 使用默认 0
+      }
+    };
+    load();
+  }, [isAuthenticated, fetchUserInfo]);
 
   const selectedValue = amount === 'custom' ? customAmount : Number(amount);
 
@@ -255,7 +266,13 @@ const BillingPage: React.FC = () => {
                 <Button variant="primary" onClick={async () => {
                   try {
                     const res: any = await api.payGetSession();
-                    const url: string = res?.url || res?.checkout_url || res?.data?.url || '';
+                    console.log('res', res);
+                    const url: string =
+                      (typeof res === 'string' ? res : '') ||
+                      res?.url ||
+                      res?.checkout_url ||
+                      (typeof res?.data === 'string' ? res.data : '') ||
+                      res?.data?.url || '';
                     if (url) {
                       window.location.href = url;
                     } else {
