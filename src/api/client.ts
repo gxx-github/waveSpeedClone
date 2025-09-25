@@ -5,7 +5,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    // return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg3MzE1NjF9.ts-nlrq6DAyhSYu0ekaAZBQxgXLjaiNEDxgqd1Fb6t0'
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg3OTU4NzZ9.bLIJAv2lD4lWXtp_5O2WA3hhGWNMVfX7RdjuNzgeo4s'
     return localStorage.getItem('token');
   } catch {
     return null;
@@ -46,11 +46,11 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
           localStorage.removeItem('user');
         } catch {}
         const isAuthRoute = path.startsWith('/auth');
-        // const onLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
-        // if (!isAuthRoute && !onLoginPage && typeof window !== 'undefined') {
-        //   const returnURL = encodeURIComponent(window.location.href);
-        //   window.location.replace(`/login?returnURL=${returnURL}`);
-        // }
+        const onLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+        if (!isAuthRoute && !onLoginPage && typeof window !== 'undefined') {
+          const returnURL = encodeURIComponent(window.location.href);
+          window.location.replace(`/login?returnURL=${returnURL}`);
+        }
       }
       const text = await res.text();
       console.error(`API error response:`, text);
@@ -136,9 +136,16 @@ export const api = {
     return apiRequest<any>(`/api/order${qs ? `?${qs}` : ''}`, { method: 'GET' });
   },
   createOrder: (payload: any) => apiRequest<any>('/api/order', { method: 'POST', body: JSON.stringify(payload) }),
+  deleteOrder: (id: number) => apiRequest<any>('/api/order', { method: 'DELETE', body: JSON.stringify({ id }) }),
   
   // Dashboard
-  getUserUsage: () => apiRequest<any>('/api/dashbord/userage', { method: 'GET' }),
+  getUserUsage: (params?: { start_time?: number; end_time?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.start_time) search.set('start_time', String(params.start_time));
+    if (params?.end_time) search.set('end_time', String(params.end_time));
+    const qs = search.toString();
+    return apiRequest<any>(`/api/dashbord/userage${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
 };
 
 

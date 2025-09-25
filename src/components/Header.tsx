@@ -304,7 +304,7 @@ const Header: React.FC = () => {
                         <strong>{user?.name || user?.email}</strong>
                       </div>
                       {/* <SmallText>{user?.email ?? 'user@example.com'}</SmallText> */}
-                      <div style={{ marginTop: '0.5rem', fontWeight: 700 }}>$ -- available</div>
+                      <div style={{ marginTop: '0.5rem', fontWeight: 700 }}>$ {user?.price?.toFixed(2) ?? '0.00'} available</div>
                     </DropHeader>
                     <Divider />
                     <MenuList>

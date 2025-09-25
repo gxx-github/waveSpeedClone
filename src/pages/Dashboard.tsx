@@ -1,5 +1,8 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
+import { DateRangePicker } from 'react-date-range';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, Input } from '../styles/GlobalStyles';
@@ -229,6 +232,29 @@ const ChartBar = styled.div<{ height: number }>`
     background: ${({ theme }) => theme.colors.secondary};
     transform: scaleY(1.05);
   }
+`;
+
+const ChartTooltip = styled.div`
+  position: absolute;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.text};
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  z-index: 5;
+`;
+
+const ChartBarLabel = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -4px);
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 // Requests Section Styles
@@ -521,6 +547,76 @@ const ConfirmText = styled.span`
   font-weight: 500;
 `;
 
+// Themed wrapper for react-date-range
+const DateRangeWrapper = styled.div`
+  .rdrCalendarWrapper {
+    background: ${({ theme }) => theme.colors.surface};
+    color: ${({ theme }) => theme.colors.text};
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    font-size: 0.92rem;
+  }
+  .rdrDateDisplay { display: none; }
+  
+  .rdrDefinedRangesWrapper { 
+    display: none; /* hide built-in middle ranges column */
+  }
+  .rdrStaticRange, .rdrInputRangeInput, .rdrStaticRangeLabel { color: ${({ theme }) => theme.colors.text}; }
+  .rdrStaticRange:hover .rdrStaticRangeLabel { background: ${({ theme }) => `${theme.colors.primary}11`}; }
+`;
+
+const RangePopover = styled.div`
+  display: flex;
+  flex-direction: column;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+`;
+
+const RangeBody = styled.div`
+  display: flex;
+`;
+
+const QuickRanges = styled.div`
+  width: 190px;
+  padding: 0.75rem;
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  border-top-left-radius: 0.75rem;
+  border-bottom-left-radius: 0.75rem;
+`;
+
+const QuickRangeItem = styled.button`
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+  font-size: 0.92rem;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: ${({ theme }) => `${theme.colors.primary}11`};
+    border-color: ${({ theme }) => `${theme.colors.primary}33`};
+  }
+`;
+
+const RangeFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+`;
+
 const DateRangeInput = styled(Input)`
   font-size: 0.9rem;
   min-width: 200px;
@@ -529,14 +625,14 @@ const DateRangeInput = styled(Input)`
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  // Usage date range (default last 30 days, UTC days)
-  const [usageDateRange, setUsageDateRange] = useState<{ start: string; end: string }>(() => {
+  // Usage date range (default last 7 days)
+  const [usageDateRange, setUsageDateRange] = useState<{ start: Date; end: Date }>(() => {
     const end = new Date();
     const start = new Date();
-    start.setDate(end.getDate() - 29);
-    const toISO = (d: Date) => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
-    return { start: toISO(start), end: toISO(end) };
+    start.setDate(end.getDate() - 6);
+    return { start, end };
   });
+  const [showRangePicker, setShowRangePicker] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     id: '',          // uuid
@@ -581,26 +677,36 @@ const Dashboard: React.FC = () => {
 
   const [usageDaily, setUsageDaily] = useState<Array<{ date: string; value: number }>>([]);
 
-  const fetchUsage = async (range?: { start?: string; end?: string }) => {
+  const fetchUsage = async (range?: { start?: Date; end?: Date }) => {
     try {
-      const res: any = await api.getUserUsage();
-      // Normalize API response
-      const totalPredictions = Number(res?.total || res?.totalPredictions || res?.count || 0);
-      const totalCost = Number(res?.total_cost || res?.totalCost || res?.cost || 0);
-      const items: any[] = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : (res?.data?.items || []));
-      const modelsUsed = items.map((it: any) => ({
-        name: String(it.model || it.name || it.model_name || ''),
-        requests: Number(it.count || it.requests || it.request_count || 0),
-        cost: Number(it.cost || it.total_cost || 0),
+      const startRef = (range?.start || usageDateRange.start);
+      const endRef = (range?.end || usageDateRange.end);
+      // 归一化到本地 00:00 和 23:59:59，确保后端包含最后一天
+      const startNorm = new Date(startRef.getFullYear(), startRef.getMonth(), startRef.getDate(), 0, 0, 0, 0).getTime();
+      const endNorm = new Date(endRef.getFullYear(), endRef.getMonth(), endRef.getDate(), 23, 59, 59, 999).getTime();
+      const startSeconds = Math.floor(startNorm / 1000);
+      const endSeconds = Math.floor(endNorm / 1000);
+      const res: any = await api.getUserUsage({ start_time: startSeconds, end_time: endSeconds });
+      // Normalize API response (new schema)
+      const data = res?.data || {};
+      const totalPredictions = Number(data?.order_count ?? res?.order_count ?? 0);
+      const totalCost = Number(data?.total_cost ?? res?.total_cost ?? 0);
+      const perModel: any[] = Array.isArray(data?.per_model_usage) ? data.per_model_usage : [];
+      const modelsUsed = perModel.map((it: any) => ({
+        name: String(it.model_id || it.model || ''),
+        requests: Number(it.request_count || it.count || 0),
+        cost: Number(it.total_cost || it.cost || 0),
       }));
       setUsageData({ totalPredictions, totalCost, modelsUsed });
 
       // Daily timeseries if provided
-      const daily: any[] = Array.isArray(res?.daily)
-        ? res.daily
-        : Array.isArray(res?.data?.daily)
-        ? res.data.daily
-        : [];
+      const dailyRaw: any[] = Array.isArray(data?.daily_usage) ? data.daily_usage : [];
+      const daily: any[] = dailyRaw.map((d: any) => ({ date: d.date, value: Number(d.amount || 0) }));
+      try {
+        console.log('[DEBUG] usageDateRange', usageDateRange.start, usageDateRange.end);
+        console.log('[DEBUG] daily_raw', dailyRaw);
+        console.log('[DEBUG] daily_norm', daily);
+      } catch {}
       if (daily.length > 0) {
         const normalized = daily.map((d: any) => ({
           date: String(d.date || d.day || ''),
@@ -617,28 +723,36 @@ const Dashboard: React.FC = () => {
 
   // Build chart data from daily or generate buckets from range
   const chartData = (() => {
-    const start = new Date(usageDateRange.start);
-    const end = new Date(usageDateRange.end);
+    // 以本地日期的 00:00 到 23:59:59 作为闭区间构建桶
+    const start = new Date(usageDateRange.start.getFullYear(), usageDateRange.start.getMonth(), usageDateRange.start.getDate(), 0, 0, 0, 0);
+    const end = new Date(usageDateRange.end.getFullYear(), usageDateRange.end.getMonth(), usageDateRange.end.getDate(), 23, 59, 59, 999);
     const dayMs = 24 * 60 * 60 * 1000;
     const fmt = (d: Date) => `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
     const buckets: Record<string, number> = {};
+    // Build a map from usageDaily using same label normalization
+    const valueMap: Record<string, number> = {};
+    for (const d of usageDaily) {
+      let label = d.date;
+      if (/\d{4}-\d{2}-\d{2}/.test(d.date)) {
+        const [y, m, day] = d.date.split('-').map((n: string) => parseInt(n, 10));
+        label = fmt(new Date(y, m - 1, day));
+      }
+      valueMap[label] = (valueMap[label] || 0) + Number(d.value || 0);
+    }
     for (let t = start.getTime(); t <= end.getTime(); t += dayMs) {
       const d = new Date(t);
       buckets[fmt(d)] = 0;
     }
-    if (usageDaily.length > 0) {
-      usageDaily.forEach((d) => {
-        // support input as YYYY-MM-DD or MM/DD
-        const dateStr = /\d{4}-\d{2}-\d{2}/.test(d.date)
-          ? (() => {
-              const dd = new Date(d.date);
-              return fmt(new Date(Date.UTC(dd.getFullYear(), dd.getMonth(), dd.getDate())));
-            })()
-          : d.date;
-        if (buckets[dateStr] !== undefined) buckets[dateStr] += d.value;
-      });
-    }
-    return Object.entries(buckets).map(([date, value]) => ({ date, value }));
+    Object.keys(buckets).forEach((label) => {
+      if (valueMap[label] !== undefined) buckets[label] = valueMap[label];
+    });
+    const data = Object.entries(buckets).map(([date, value]) => ({ date, value }));
+    try {
+      console.log('[DEBUG] valueMap', valueMap);
+      console.log('[DEBUG] buckets', buckets);
+      console.log('[DEBUG] chartData', data);
+    } catch {}
+    return data;
   })();
 
   const fetchOrders = async () => {
@@ -752,22 +866,65 @@ const Dashboard: React.FC = () => {
               <UsageTitle>Usage</UsageTitle>
               <UsageSubtitle>See usage statistics per model</UsageSubtitle>
             </div>
-            {/* <UsageDateRangeContainer onClick={() => {
-              const s = prompt('开始时间 (YYYY-MM-DD)', usageDateRange.start.slice(0,10));
-              const e = prompt('结束时间 (YYYY-MM-DD)', usageDateRange.end.slice(0,10));
-              if (s && e) {
-                const startISO = new Date(`${s}T00:00:00Z`).toISOString();
-                const endISO = new Date(`${e}T00:00:00Z`).toISOString();
-                setUsageDateRange({ start: startISO, end: endISO });
-                fetchUsage({ start: startISO, end: endISO });
-              }
-            }}>
-              <span>📅</span>
-              <UsageDateRangeText>
-                {new Date(usageDateRange.start).toLocaleDateString()} – {new Date(usageDateRange.end).toLocaleDateString()}
-              </UsageDateRangeText>
-              <CloseIcon>✕</CloseIcon>
-            </UsageDateRangeContainer> */}
+            <div style={{ position: 'relative' }}>
+              <UsageDateRangeContainer onClick={() => setShowRangePicker(v => !v)}>
+                <span>📅</span>
+                <UsageDateRangeText>
+                  {usageDateRange.start.toLocaleDateString()} – {usageDateRange.end.toLocaleDateString()}
+                </UsageDateRangeText>
+                <CloseIcon>▾</CloseIcon>
+              </UsageDateRangeContainer>
+              {showRangePicker && (
+                <div style={{ position: 'absolute', right: 0, zIndex: 30 }}>
+                  <RangePopover>
+                    <RangeBody>
+                      <QuickRanges>
+                      {[
+                        { label: 'Today', gen: () => { const n = new Date(); return { start: n, end: n }; } },
+                        { label: 'Yesterday', gen: () => { const n = new Date(); n.setDate(n.getDate()-1); return { start: n, end: n }; } },
+                        { label: 'This Week', gen: () => { const n = new Date(); const day = n.getDay()||7; const s = new Date(n); s.setDate(n.getDate()-day+1); return { start: s, end: n }; } },
+                        { label: 'Last Week', gen: () => { const n = new Date(); const day = n.getDay()||7; const end = new Date(n); end.setDate(n.getDate()-day); const start = new Date(end); start.setDate(end.getDate()-6); return { start, end }; } },
+                        { label: 'Last 30 Days', gen: () => { const end = new Date(); const start = new Date(); start.setDate(end.getDate()-29); return { start, end }; } },
+                        { label: 'This Month', gen: () => { const n = new Date(); const start = new Date(n.getFullYear(), n.getMonth(), 1); return { start, end: n }; } },
+                        { label: 'Last Month', gen: () => { const n = new Date(); const start = new Date(n.getFullYear(), n.getMonth()-1, 1); const end = new Date(n.getFullYear(), n.getMonth(), 0); return { start, end }; } },
+                      ].map((q, i) => (
+                        <QuickRangeItem key={i} onClick={() => { const { start, end } = q.gen(); setUsageDateRange({ start, end }); setShowRangePicker(false); fetchUsage({ start, end }); }}>{q.label}</QuickRangeItem>
+                      ))}
+                      </QuickRanges>
+                      <DateRangeWrapper>
+                      <DateRangePicker
+                    ranges={[{ startDate: usageDateRange.start, endDate: usageDateRange.end, key: 'selection' }]}
+                        onChange={(r: any) => {
+                          const sel = r.selection || r.selectionRange || r.range1 || r[Object.keys(r)[0]];
+                          if (sel?.startDate && sel?.endDate) {
+                            let start = new Date(sel.startDate);
+                            let end = new Date(sel.endDate);
+                            if (start.getTime() > end.getTime()) {
+                              const tmp = start; start = end; end = tmp;
+                            }
+                            // 仅更新选择，不自动关闭/请求，允许继续点第二个日期完成范围
+                            setUsageDateRange({ start, end });
+                          }
+                        }}
+                    onRangeFocusChange={() => {}}
+                    moveRangeOnFirstSelection={false}
+                        showSelectionPreview
+                        dragSelectionEnabled
+                    months={2}
+                    direction="horizontal"
+                    weekdayDisplayFormat="EEE"
+                    monthDisplayFormat="MMM yyyy"
+                  />
+                      </DateRangeWrapper>
+                    </RangeBody>
+                  </RangePopover>
+                  <RangeFooter>
+                    <ActionButton variant="secondary" onClick={() => setShowRangePicker(false)}>Cancel</ActionButton>
+                    <ActionButton variant="primary" onClick={() => { setShowRangePicker(false); fetchUsage(); }}>Apply</ActionButton>
+                  </RangeFooter>
+                </div>
+              )}
+            </div>
           </UsageHeader>
 
           <UsageContent>
@@ -802,35 +959,70 @@ const Dashboard: React.FC = () => {
               </UsageTable>
             </UsagePerModelCard>
 
-            {/* Usage breakdown - Right side
+            {/* Usage breakdown - Right side */}
             <UsageBreakdownCard>
               <UsageBreakdownTitle>Usage breakdown</UsageBreakdownTitle>
               
               <ChartContainer>
-                <ChartYAxis>
-                  <span>0.16</span>
-                  <span>0.12</span>
-                  <span>0.08</span>
-                  <span>0.04</span>
-                  <span>0</span>
-                </ChartYAxis>
-                
-                <ChartXAxis>
-                  {chartData.map((item, index) => (
-                    <span key={index}>{item.date}</span>
-                  ))}
-                </ChartXAxis>
-                
-                <ChartBars>
-                  {chartData.map((item, index) => (
-                    <ChartBar 
-                      key={index} 
-                      height={item.value > 0 ? (item.value / 0.16) * 100 : 5} 
-                    />
-                  ))}
-                </ChartBars>
+                {(() => {
+                  const values = chartData.map(d => d.value);
+                  const max = Math.max(0, ...values);
+                  // 计算合适的上限（向上取整到 1、2、5 刻度）
+                  const steps = [1, 2, 5];
+                  let magnitude = Math.pow(10, Math.floor(Math.log10(max || 1)));
+                  let top = steps[0] * magnitude;
+                  for (const s of steps) {
+                    const candidate = s * magnitude;
+                    if (candidate >= max * 1.1) { top = candidate; break; }
+                  }
+                  if (max <= 0) top = 1;
+                  const ticks = 4;
+                  const formatter = (v: number) => {
+                    // 小数较小用 4 位，否则 2 位；前缀 $ 符合金额语义
+                    const precision = top < 1 ? 4 : 2;
+                    return `$${v.toFixed(precision)}`;
+                  };
+                  const labels = Array.from({ length: ticks + 1 }, (_, i) => formatter((top / ticks) * (ticks - i)));
+                  const heightPct = (v: number) => (v <= 0 ? 0 : Math.max(1.5, Math.min(100, (v / top) * 100)));
+                  return (
+                    <>
+                      <ChartYAxis>
+                        {labels.map((t, i) => (<span key={i}>{t}</span>))}
+                      </ChartYAxis>
+                      <ChartXAxis>
+                        {chartData.map((item, index) => (
+                          // 仅显示首日、末日与每隔2-3天一个，避免挤压
+                          ((index === 0) || (index === chartData.length - 1) || (index % Math.ceil(chartData.length / 6) === 0)) ? (
+                            <span key={index}>{item.date}</span>
+                          ) : (
+                            <span key={index} />
+                          )
+                        ))}
+                      </ChartXAxis>
+                      <ChartBars>
+                        {chartData.map((item, index) => (
+                          <div key={index} style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', height: '100%' }}
+                            onMouseEnter={(e) => {
+                              const tip = (e.currentTarget.querySelector('[data-tip]') as HTMLDivElement);
+                              if (tip) tip.style.opacity = '1';
+                            }}
+                            onMouseLeave={(e) => {
+                              const tip = (e.currentTarget.querySelector('[data-tip]') as HTMLDivElement);
+                              if (tip) tip.style.opacity = '0';
+                            }}
+                          >
+                            <ChartBar height={heightPct(item.value)} />
+                            <ChartTooltip data-tip style={{ left: '10px', bottom: `${heightPct(item.value)}%`, opacity: 0 }}>
+                              {item.date} · {formatter(item.value)}
+                            </ChartTooltip>
+                          </div>
+                        ))}
+                      </ChartBars>
+                    </>
+                  );
+                })()}
               </ChartContainer>
-            </UsageBreakdownCard> */}
+            </UsageBreakdownCard>
           </UsageContent>
         </UsageSection>
 
