@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Card, Button, Input } from '../styles/GlobalStyles';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../api/client';
 
 const PageContainer = styled.div`
   padding: 2rem 0;
@@ -190,7 +191,7 @@ const BillingPage: React.FC = () => {
   const { user, fetchUserInfo, isAuthenticated } = useAuth();
   const balance = 0.85;
   const [tab, setTab] = useState<'topup' | 'billing'>('topup');
-  const [amount, setAmount] = useState<'10' | '50' | '100' | 'custom'>('10');
+  const [amount, setAmount] = useState<'10' | '50' | '100' | 'custom'>('custom');
   const [customAmount, setCustomAmount] = useState(2);
   const [payment, setPayment] = useState<'paypal' | 'stripe'>('stripe');
   const history: Array<{ id: string; date: string; description: string; amount: number; status: string }> = [];
@@ -218,7 +219,7 @@ const BillingPage: React.FC = () => {
             <SectionCard>
               <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>Amount</p>
               <AmountGrid>
-                <AmountCard $active={amount==='10'} onClick={() => setAmount('10')}>
+                {/* <AmountCard $active={amount==='10'} onClick={() => setAmount('10')}>
                   <div className="price">$10</div>
                   <div className="note">Generate over <b>100</b> videos or <b>2,000</b> images.</div>
                 </AmountCard>
@@ -229,7 +230,7 @@ const BillingPage: React.FC = () => {
                 <AmountCard $active={amount==='100'} onClick={() => setAmount('100')}>
                   <div className="price">$100</div>
                   <div className="note">Generate over <b>1,000</b> videos or <b>20,000</b> images.</div>
-                </AmountCard>
+                </AmountCard> */}
                 <AmountCard $active={amount==='custom'} onClick={() => setAmount('custom')}>
                   <div className="price">Custom</div>
                   <div className="note">Minimum <b>$2</b><span> </span><b>$1</b> increments</div>
@@ -244,26 +245,38 @@ const BillingPage: React.FC = () => {
 
               <p style={{ marginTop: '1rem', fontWeight: 600 }}>Payment Method</p>
               <PaymentRow>
-                <Radio $active={payment==='paypal'} onClick={() => setPayment('paypal')}>
+                {/* <Radio $active={payment==='paypal'} onClick={() => setPayment('paypal')}>
                   <input type="radio" checked={payment==='paypal'} readOnly /> PayPal
-                </Radio>
+                </Radio> */}
                 <Radio $active={payment==='stripe'} onClick={() => setPayment('stripe')}>
                   <input type="radio" checked={payment==='stripe'} readOnly /> stripe
                 </Radio>
                 <div style={{ flex: 1 }} />
-                <Button variant="primary">
+                <Button variant="primary" onClick={async () => {
+                  try {
+                    const res: any = await api.payGetSession();
+                    const url: string = res?.url || res?.checkout_url || res?.data?.url || '';
+                    if (url) {
+                      window.location.href = url;
+                    } else {
+                      alert('未获取到支付链接');
+                    }
+                  } catch (e: any) {
+                    alert(e?.message || '创建支付会话失败');
+                  }
+                }}>
                   {selectedValue === 10 ? 'Buy (Get $12)' : `Buy $${selectedValue}`}
                 </Button>
               </PaymentRow>
 
-              <Divider />
-              <Inline>
+              {/* <Divider /> */}
+              {/* <Inline>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <strong>Automated Top–ups:</strong>
                   <Small>You can set up automated top–ups to avoid running out of credits.</Small>
                 </div>
                 <Button variant="secondary" size="sm">Enable</Button>
-              </Inline>
+              </Inline> */}
             </SectionCard>
 
             <Inline style={{ marginTop: '1rem' }}>

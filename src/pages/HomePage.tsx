@@ -400,6 +400,15 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
+const EmptyState = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
 const ModelGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -511,12 +520,13 @@ const HomePage: React.FC = () => {
       <Section>
         <Container>
           <SectionTitle>Featured Models</SectionTitle>
-          {loading ? (
+          {loading && (
             <LoadingSpinner />
-          ) : error ? (
-            <ErrorMessage>
-              {error}. Using local data as fallback.
-            </ErrorMessage>
+          ) }
+          {(!loading && featuredModels.length === 0) ? (
+            <EmptyState>
+              No models available yet. Please try again later.
+            </EmptyState>
           ) : null}
           <ModelGrid>
             {featuredModels.map((model) => {

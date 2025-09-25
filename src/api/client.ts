@@ -5,7 +5,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg3OTU4NzZ9.bLIJAv2lD4lWXtp_5O2WA3hhGWNMVfX7RdjuNzgeo4s'
+    // return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4MDk0OTF9.uTxTpNAann5e6Eod52OdJyXSX7JpOnapTLj6NvSneJw'
     return localStorage.getItem('token');
   } catch {
     return null;
@@ -146,6 +146,9 @@ export const api = {
     const qs = search.toString();
     return apiRequest<any>(`/api/dashbord/userage${qs ? `?${qs}` : ''}`, { method: 'GET' });
   },
+
+  // Payments - Stripe checkout session
+  payGetSession: () => apiRequest<any>(`/api/pay/get_session`, { method: 'GET' }),
 };
 
 
