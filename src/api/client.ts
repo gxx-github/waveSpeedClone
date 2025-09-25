@@ -5,7 +5,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    // return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4MTIyNDJ9.UHzeWgrpQCqGBwS_B_J6Nvfr6SS7baX0dmkawAjlir4'
+    // return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4MTM4Mjh9._aksggTcB9RI80E-KmvDCCiILOE7Qtj9Kdrd1Xr854A'
     return localStorage.getItem('token');
   } catch {
     return null;
