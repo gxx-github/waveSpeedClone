@@ -5,7 +5,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4Nzc1NjN9.T98Auj4y0q0-Tm4rRWfZ9SZgs04zk25VYMQktHKPn9s'
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4Nzk0NTB9.TojV1_VXOF_hmbfLzQfsfunuJo_cYF5ZmJrwZBrVK54'
     return localStorage.getItem('token');
   } catch {
     return null;
@@ -153,6 +153,15 @@ export const api = {
     if (params?.price_type) search.set('price_type', params.price_type);
     const qs = search.toString();
     return apiRequest<any>(`/api/pay/get_session${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
+
+  // Payments - list history
+  payList: (params?: { page?: number; page_size?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.page_size) search.set('page_size', String(params.page_size));
+    const qs = search.toString();
+    return apiRequest<any>(`/api/pay/pay_list${qs ? `?${qs}` : ''}`, { method: 'GET' });
   },
 };
 

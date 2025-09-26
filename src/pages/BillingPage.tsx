@@ -51,25 +51,47 @@ const Subtle = styled.p`
 const Table = styled(Card)`
   padding: 0;
   overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const TableHeader = styled.div`
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr 0.9fr; /* Date | Amount | Status */
   background: ${({ theme }) => theme.colors.surface};
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   font-weight: 600;
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.text};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const Row = styled.div`
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr 0.9fr; /* Date | Amount | Status */
   border-top: 1px solid ${({ theme }) => theme.colors.border};
+  transition: background 0.15s ease;
+
+  &:nth-child(even) {
+    background: ${({ theme }) => theme.colors.surface};
+  }
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.cardBackground};
+  }
 `;
 
 const Cell = styled.div`
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   color: ${({ theme }) => theme.colors.textSecondary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  /* Amount column right-align and use tabular numbers */
+  &:nth-child(2) {
+    color: ${({ theme }) => theme.colors.text};
+    font-variant-numeric: tabular-nums;
+  }
 `;
 
 const SectionCard = styled(Card)`
@@ -188,6 +210,56 @@ const Small = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+const StatusPill = styled.span<{ $status: 'pending' | 'success' | 'failed' | string }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  ${({ $status }) => {
+    switch ($status) {
+      case 'success':
+        return `background:#dcfce7;color:#166534;`;
+      case 'failed':
+        return `background:#fee2e2;color:#991b1b;`;
+      case 'pending':
+      default:
+        return `background:#fef3c7;color:#92400e;`;
+    }
+  }}
+`;
+
+const InlineLoader = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.9rem;
+  &::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e5e7eb;
+    border-top-color: ${({ theme }) => theme.colors.primary};
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin .9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+`;
+
+const formatBillDate = (input: string): string => {
+  if (!input) return '--';
+  const t = Date.parse(input);
+  if (!Number.isNaN(t)) {
+    const d = new Date(t);
+    const pad = (v: number) => String(v).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  return String(input);
+};
+
 const BillingPage: React.FC = () => {
   const { user, fetchUserInfo, isAuthenticated } = useAuth();
   const [balance, setBalance] = useState<number>(0);
@@ -195,8 +267,12 @@ const BillingPage: React.FC = () => {
   const [amount, setAmount] = useState<'10' | '50' | '100' | 'custom'>('10');
   const [customAmount, setCustomAmount] = useState(2);
   const [payment, setPayment] = useState<'paypal' | 'stripe'>('stripe');
-  const history: Array<{ id: string; date: string; description: string; amount: number; status: string }> = [];
+  const [history, setHistory] = useState<Array<{ id: string; date: string; description: string; amount: number; status: string }>>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   const { showToast } = useToast();
+  const [billsLoading, setBillsLoading] = useState(false);
 
   // 获取用户信息
   useEffect(() => {
@@ -215,6 +291,35 @@ const BillingPage: React.FC = () => {
     };
     load();
   }, [isAuthenticated, fetchUserInfo]);
+
+  useEffect(() => {
+    const loadBills = async () => {
+      try {
+        setBillsLoading(true);
+        const res: any = await api.payList({ page, page_size: pageSize });
+        const items: any[] = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : (res?.data?.items || res?.data || []));
+        const normalized = items.map((it: any, idx: number) => ({
+          id: String(it.id || it.payment_id || idx),
+          date: String(it.create_date || it.created_at || it.create_time || it.date || ''),
+          description: String(it.description || it.remark || it.note || it.type || 'Top up'),
+          amount: Number(it.amount ?? it.total ?? it.price ?? 0),
+          status: String(it.status || 'pending'),
+        }));
+        const totalCount = Number(res?.total || res?.data?.total || items.length);
+        setHistory(normalized);
+        setTotal(isFinite(totalCount) ? totalCount : normalized.length);
+      } catch (err: any) {
+        showToast(err?.message || '获取支付记录失败', { type: 'error' });
+      } finally {
+        setBillsLoading(false);
+      }
+    };
+    if (tab === 'topup') {
+      loadBills();
+    }else{
+      setHistory([]);
+    }
+  }, [page, pageSize, showToast, tab]);
 
   const selectedValue = amount === 'custom' ? customAmount : Number(amount);
 
@@ -307,37 +412,47 @@ const BillingPage: React.FC = () => {
             <Inline style={{ marginTop: '1rem' }}>
               <Tabs>
                 <Tab $active={tab==='topup'} onClick={() => setTab('topup')}>Top up</Tab>
-                <Tab $active={tab==='billing'} onClick={() => setTab('billing')}>Billing</Tab>
+                {/* <Tab $active={tab==='billing'} onClick={() => setTab('billing')}>Billing</Tab> */}
               </Tabs>
-              <Button variant="secondary" size="sm">Add Billing Address</Button>
+              {/* <Button variant="secondary" size="sm">Add Billing Address</Button> */}
             </Inline>
 
             <Table>
               <TableHeader>
-                <div>Description</div>
                 <div>Date</div>
                 <div>Amount</div>
-                <div>Action</div>
+                <div>Status</div>
               </TableHeader>
-              {history.length === 0 ? (
-                <Empty>Showing 1 to 0 of 0 results</Empty>
+              {billsLoading ? (
+                <div style={{ padding: '1rem', textAlign: 'center' }}>
+                  <InlineLoader>Loading records…</InlineLoader>
+                </div>
+              ) : history.length === 0 ? (
+                <Empty>No top up records yet</Empty>
               ) : (
                 history.map((item) => (
                   <Row key={item.id}>
-                    <Cell>{item.description}</Cell>
-                    <Cell>{item.date}</Cell>
+                    <Cell>{formatBillDate(item.date)}</Cell>
                     <Cell>${item.amount.toFixed(2)}</Cell>
-                    <Cell>-</Cell>
+                    <Cell><StatusPill $status={item.status}>{item.status}</StatusPill></Cell>
                   </Row>
                 ))
               )}
             </Table>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <Small>Previous</Small>
-              <Button size="sm" variant="secondary">1</Button>
-              <Button size="sm" variant="secondary">Go</Button>
-              <Small>Next</Small>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <Small>Showing {(history.length===0)?0:((page-1)*pageSize+1)} to {Math.min(page*pageSize, total)} of {total} results</Small>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Button size="sm" variant="secondary" onClick={() => setPage((p) => Math.max(1, p-1))} disabled={page<=1}>Previous</Button>
+                <Input style={{ width: 56, textAlign: 'center' }} value={page} onChange={(e) => { const v = parseInt(e.target.value||'1',10); if(!Number.isNaN(v)) setPage(Math.max(1,v)); }} />
+                <Button size="sm" variant="secondary" onClick={() => { /* refresh */ }}>Go</Button>
+                <Button size="sm" variant="secondary" onClick={() => setPage((p)=> (p*pageSize<total? p+1 : p))} disabled={page*pageSize>=total}>Next</Button>
+                <select value={pageSize} onChange={(e)=>{ setPageSize(parseInt(e.target.value,10)); setPage(1); }} style={{ padding: '0.4rem 0.5rem', border: '1px solid var(--border,#e5e7eb)', borderRadius: 8 }}>
+                  <option value={10}>10/page</option>
+                  <option value={20}>20/page</option>
+                  <option value={50}>50/page</option>
+                </select>
+              </div>
             </div>
           </div>
 
