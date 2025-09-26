@@ -5,7 +5,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    // return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4MTM4Mjh9._aksggTcB9RI80E-KmvDCCiILOE7Qtj9Kdrd1Xr854A'
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4Nzc1NjN9.T98Auj4y0q0-Tm4rRWfZ9SZgs04zk25VYMQktHKPn9s'
     return localStorage.getItem('token');
   } catch {
     return null;
@@ -148,7 +148,12 @@ export const api = {
   },
 
   // Payments - Stripe checkout session
-  payGetSession: () => apiRequest<any>(`/api/pay/get_session`, { method: 'GET' }),
+  payGetSession: (params?: { price_type?: 'price_10' | 'price_50' | 'price_100' | 'price_custom' | string }) => {
+    const search = new URLSearchParams();
+    if (params?.price_type) search.set('price_type', params.price_type);
+    const qs = search.toString();
+    return apiRequest<any>(`/api/pay/get_session${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
 };
 
 

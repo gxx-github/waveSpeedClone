@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Card, Button, Input } from '../styles/GlobalStyles';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
+import { useToast } from '../components/Toast';
 
 const PageContainer = styled.div`
   padding: 2rem 0;
@@ -191,10 +192,11 @@ const BillingPage: React.FC = () => {
   const { user, fetchUserInfo, isAuthenticated } = useAuth();
   const [balance, setBalance] = useState<number>(0);
   const [tab, setTab] = useState<'topup' | 'billing'>('topup');
-  const [amount, setAmount] = useState<'10' | '50' | '100' | 'custom'>('custom');
+  const [amount, setAmount] = useState<'10' | '50' | '100' | 'custom'>('10');
   const [customAmount, setCustomAmount] = useState(2);
   const [payment, setPayment] = useState<'paypal' | 'stripe'>('stripe');
   const history: Array<{ id: string; date: string; description: string; amount: number; status: string }> = [];
+  const { showToast } = useToast();
 
   // 获取用户信息
   useEffect(() => {
@@ -205,7 +207,7 @@ const BillingPage: React.FC = () => {
         }
         const me = await api.me() as any;
         // 兼容多种字段名：balance / account_balance / credits 等
-        const b = Number(me?.balance ?? me?.account_balance ?? me?.credits ?? 0);
+        const b = Number(me.price ?? 0);
         setBalance(isFinite(b) ? b : 0);
       } catch (e) {
         // 保持静默失败，UI 使用默认 0
@@ -230,7 +232,7 @@ const BillingPage: React.FC = () => {
             <SectionCard>
               <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>Amount</p>
               <AmountGrid>
-                {/* <AmountCard $active={amount==='10'} onClick={() => setAmount('10')}>
+                <AmountCard $active={amount==='10'} onClick={() => setAmount('10')}>
                   <div className="price">$10</div>
                   <div className="note">Generate over <b>100</b> videos or <b>2,000</b> images.</div>
                 </AmountCard>
@@ -241,7 +243,7 @@ const BillingPage: React.FC = () => {
                 <AmountCard $active={amount==='100'} onClick={() => setAmount('100')}>
                   <div className="price">$100</div>
                   <div className="note">Generate over <b>1,000</b> videos or <b>20,000</b> images.</div>
-                </AmountCard> */}
+                </AmountCard>
                 <AmountCard $active={amount==='custom'} onClick={() => setAmount('custom')}>
                   <div className="price">Custom</div>
                   <div className="note">Minimum <b>$2</b><span> </span><b>$1</b> increments</div>
@@ -265,7 +267,13 @@ const BillingPage: React.FC = () => {
                 <div style={{ flex: 1 }} />
                 <Button variant="primary" onClick={async () => {
                   try {
-                    const res: any = await api.payGetSession();
+                    let price_type: 'price_10' | 'price_50' | 'price_100' | 'price_custom' = 'price_custom';
+                    if (amount === '10') price_type = 'price_10';
+                    else if (amount === '50') price_type = 'price_50';
+                    else if (amount === '100') price_type = 'price_100';
+                    else price_type = 'price_custom';
+
+                    const res: any = await api.payGetSession({ price_type });
                     console.log('res', res);
                     const url: string =
                       (typeof res === 'string' ? res : '') ||
@@ -276,10 +284,10 @@ const BillingPage: React.FC = () => {
                     if (url) {
                       window.location.href = url;
                     } else {
-                      alert('未获取到支付链接');
+                      showToast('未获取到支付链接', { type: 'error' });
                     }
                   } catch (e: any) {
-                    alert(e?.message || '创建支付会话失败');
+                    showToast(e?.message || '创建支付会话失败', { type: 'error' });
                   }
                 }}>
                   {selectedValue === 10 ? 'Buy (Get $12)' : `Buy $${selectedValue}`}
@@ -337,7 +345,7 @@ const BillingPage: React.FC = () => {
             <h2 style={{ marginBottom: '0.75rem' }}>My Account</h2>
             <Avatar>{(user?.name || user?.email || 'U').toString().charAt(0).toUpperCase()}</Avatar>
             <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{user?.name || user?.email || 'User'}</div>
-            <Small>{user?.email || 'user@example.com'}</Small>
+            {/* <Small>{user?.email || 'user@example.com'}</Small> */}
             <Balance style={{ marginTop: '1rem' }}>${balance.toFixed(2)}</Balance>
             <Small>Account Balance</Small>
             <Small>The balance never expires.</Small>
