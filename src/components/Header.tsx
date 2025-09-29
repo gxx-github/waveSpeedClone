@@ -281,9 +281,14 @@ const Header: React.FC = () => {
             <NavLink to="/billing" $active={isActive('/billing')}>
               Billing
             </NavLink>
-            <NavLink to="/docs" $active={isActive('/docs')}>
+            <a href="/docs/docs" target="_blank" rel="noopener noreferrer" style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '0.5rem',
+              fontWeight: 500,
+              color: isActive('/docs') ? (theme.colors.primary) : (theme.colors.textSecondary),
+            }}>
               Doc
-            </NavLink>
+            </a>
           
           </Nav>
 

@@ -73,11 +73,20 @@ export default defineConfig(({ command, mode }) => {
               });
             },
           },
-          // 代理所有 /docs 请求到后端（用于API文档）
+          // 代理 /docs 到官方文档站（仅开发环境）
           '/docs': {
-            target: 'http://47.242.127.155:41010',
+            target: 'https://wavespeed.ai',
             changeOrigin: true,
-            secure: false,
+            secure: true,
+            rewrite: (path) => path.replace(/^\/docs/, '/docs'),
+            configure: (proxy, _options) => {
+              proxy.on('proxyRes', (proxyRes) => {
+                const sc = proxyRes.headers['set-cookie'];
+                if (Array.isArray(sc)) {
+                  proxyRes.headers['set-cookie'] = sc.map((v) => v.replace(/;\s*Domain=[^;]+/i, ''));
+                }
+              });
+            }
           },
         },
       }),
