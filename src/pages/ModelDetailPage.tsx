@@ -875,7 +875,15 @@ const ModelDetailPage: React.FC = () => {
               {activeTab === 'playground' && (
                 <>
                   {modelParams && Object.keys(modelParams).length > 0 ? (
-                    Object.entries(modelParams).map(([paramName, paramConfig]) => (
+                    Object.entries(modelParams)
+                      .sort((a, b) => {
+                        const ak = a[0].toLowerCase();
+                        const bk = b[0].toLowerCase();
+                        if (ak === 'prompt' && bk !== 'prompt') return -1;
+                        if (bk === 'prompt' && ak !== 'prompt') return 1;
+                        return 0;
+                      })
+                      .map(([paramName, paramConfig]) => (
                       <DynamicParamField
                         key={paramName}
                         paramName={paramName}
@@ -884,7 +892,7 @@ const ModelDetailPage: React.FC = () => {
                         onChange={(value) => handleParamChange(paramName, value)}
                         disabled={status === 'processing'}
                       />
-                    ))
+                      ))
                   ) : (
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
                       <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>⚙️</div>
