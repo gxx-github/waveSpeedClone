@@ -1,5 +1,6 @@
 import type React from 'react';
 import styled from 'styled-components';
+import { api } from '../api/client';
 import { Input, Textarea } from '../styles/GlobalStyles';
 import type { ModelParam } from '../types/models';
 
@@ -158,6 +159,35 @@ const InputContainer = styled.div`
   gap: 0.5rem;
 `;
 
+const UploadRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const UploadButton = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 0.5rem;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+  font-size: 0.9rem;
+
+  &:hover { border-color: ${({ theme }) => theme.colors.primary}; }
+`;
+
+const Thumb = styled.img`
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
 const ErrorMessage = styled.div`
   color: #ef4444;
   font-size: 0.8rem;
@@ -212,6 +242,68 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
 
     switch (type) {
       case 'STRING':
+        // 对于图片相关的字段，增加本地上传能力（与 URL 文本输入并存）
+        {
+          const isImageLike = /(^image(s)?$|img|photo|input_image|images?)/i.test(paramName);
+          if (!multiline && isImageLike) {
+            const src = (value || '').toString();
+            const handleFile = async (file: File) => {
+              if (!file) return;
+              try {
+                const resp: any = await api.uploadFile(file);
+                const url = typeof resp === 'string' ? resp : (resp?.download_url || resp?.url || resp?.data || '');
+                if (url) {
+                  onChange(String(url));
+                } else {
+                  // 回退到本地预览
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const result = typeof reader.result === 'string' ? reader.result : '';
+                    onChange(result);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              } catch (e) {
+                // 失败也回退到本地预览
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = typeof reader.result === 'string' ? reader.result : '';
+                  onChange(result);
+                };
+                reader.readAsDataURL(file);
+              }
+            };
+            return (
+              <div>
+                <Input
+                  type="text"
+                  value={value || ''}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder={`Enter image url...`}
+                  disabled={disabled}
+                />
+                <UploadRow style={{ marginTop: '0.5rem' }}>
+                  <UploadButton>
+                    📁 Upload
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFile(file);
+                      }}
+                      disabled={disabled}
+                    />
+                  </UploadButton>
+                  {src && (src.startsWith('http') || src.startsWith('data:')) && (
+                    <Thumb src={src} alt="preview" />
+                  )}
+                </UploadRow>
+              </div>
+            );
+          }
+        }
         if (multiline) {
           return (
             <Textarea

@@ -608,7 +608,7 @@ const ModelDetailPage: React.FC = () => {
       console.log('Submitting order with payload:', payload);
       const res = await api.createOrder(payload as any);
       console.log('Order created successfully:', res);
-      if(res.error || res.code !==200){
+      if(res.error || res.code ===400){
         setStatus('error');
 
         let errorMessage = '生成失败，请重试';

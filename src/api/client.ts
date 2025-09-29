@@ -5,7 +5,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTg4Nzk0NTB9.TojV1_VXOF_hmbfLzQfsfunuJo_cYF5ZmJrwZBrVK54'
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NTkxNTc3OTd9.lC4PJJ5HPxCKP3Y077wNlbeYCevYozb0KKzv8W4ZAQg'
     return localStorage.getItem('token');
   } catch {
     return null;
@@ -162,6 +162,30 @@ export const api = {
     if (params?.page_size) search.set('page_size', String(params.page_size));
     const qs = search.toString();
     return apiRequest<any>(`/api/pay/pay_list${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
+
+  // Upload - image/file
+  uploadFile: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    const token = ((): string | null => {
+      try { return localStorage.getItem('token'); } catch { return null; }
+    })();
+    const res = await fetch(`${BASE_URL}/api/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } as any : undefined,
+      body: form,
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`HTTP ${res.status}: ${txt}`);
+    }
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      return data as any;
+    }
+    return await res.text();
   },
 };
 
