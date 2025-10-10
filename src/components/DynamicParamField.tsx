@@ -304,13 +304,14 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
             );
           }
         }
-        if (multiline) {
+        // 对于 prompt 字段，强制使用 textarea
+        if (multiline || paramName.toLowerCase() === 'prompt') {
           return (
             <Textarea
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
               placeholder={`Enter ${paramName}...`}
-              rows={4}
+              rows={paramName.toLowerCase() === 'prompt' ? 6 : 4}
               disabled={disabled}
             />
           );

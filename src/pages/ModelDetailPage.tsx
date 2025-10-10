@@ -567,11 +567,11 @@ const ModelDetailPage: React.FC = () => {
   }
 
   const handleGenerate = async () => {
-    // if (!isAuthenticated) {
-    //   showToast('请先登录后再运行模型', { type: 'error' });
-    //   navigate('/login');
-    //   return;
-    // }
+    if (!isAuthenticated) {
+      showToast('请先登录后再运行模型', { type: 'error' });
+      navigate('/login');
+      return;
+    }
     const missing: string[] = [];
     Object.entries(modelParams).forEach(([key, cfg]) => {
       if (cfg.required) {
@@ -623,9 +623,9 @@ const ModelDetailPage: React.FC = () => {
           }
         } catch {}
   
-        // if (/401|unauthorized/i.test(errorMessage)) {
-        //   errorMessage = '未授权访问，请先登录后重试';
-        // }
+        if (/401|unauthorized/i.test(errorMessage)) {
+          errorMessage = '未授权访问，请先登录后重试';
+        }
   
         showToast(`错误: ${errorMessage}`, { type: 'error' });
         return ;
