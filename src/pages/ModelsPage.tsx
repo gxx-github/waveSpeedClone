@@ -338,6 +338,7 @@ const ModelsPage: React.FC = () => {
   // 获取API模型数据
   useEffect(() => {
     const fetchApiModels = async () => {
+      setIsLoading(true);
       try {
         const response = await api.listModels();
         if (response && Array.isArray(response)) {
@@ -346,23 +347,21 @@ const ModelsPage: React.FC = () => {
         } else if (response && response.models && Array.isArray(response.models)) {
           setApiModels(response.models);
           setUseApiData(true);
+        } else {
+          setUseApiData(false);
         }
       } catch (error) {
         console.error('Failed to fetch API models:', error);
         setUseApiData(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchApiModels();
   }, []);
 
-  // 模拟加载
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+  // 移除固定超时，骨架严格跟随接口响应
 
   // 模拟搜索延迟
   useEffect(() => {
