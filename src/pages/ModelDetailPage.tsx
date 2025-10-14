@@ -434,6 +434,7 @@ const ModelDetailPage: React.FC = () => {
       hot: Boolean(effectiveApiModel.hot),
       commercial: Boolean(effectiveApiModel.commercial),
       partner: Boolean(effectiveApiModel.partner),
+      cover_url: effectiveApiModel.cover_url ,
     };
   })() : undefined;
 
@@ -764,7 +765,62 @@ const ModelDetailPage: React.FC = () => {
       case 'idle':
         return (
           <>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎬</div>
+            {model?.cover_url ? (
+              (() => {
+                const url = model.cover_url.toLowerCase();
+                const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('.mov');
+                const isImage = url.includes('.png') || url.includes('.jpg') || url.includes('.jpeg') || url.includes('.gif') || url.includes('.webp') || url.includes('.svg');
+                
+                if (isVideo) {
+                  return (
+                    <GeneratedVideo 
+                      controls 
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '350px', 
+                        objectFit: 'cover',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1rem'
+                      }}
+                    >
+                      <source src={model.cover_url} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </GeneratedVideo>
+                  );
+                } else if (isImage) {
+                  return (
+                    <GeneratedImage 
+                      src={model.cover_url} 
+                      alt="Model preview" 
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '350px', 
+                        objectFit: 'cover',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1rem'
+                      }}
+                    />
+                  );
+                } else {
+                  // 如果无法确定类型，默认显示为图片
+                  return (
+                    <GeneratedImage 
+                      src={model.cover_url} 
+                      alt="Model preview" 
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '350px', 
+                        objectFit: 'cover',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1rem'
+                      }}
+                    />
+                  );
+                }
+              })()
+            ) : (
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎬</div>
+            )}
             <PreviewText>Ready to generate with {model.name}</PreviewText>
             <StatusIndicator $status="idle">
               <span>●</span>
