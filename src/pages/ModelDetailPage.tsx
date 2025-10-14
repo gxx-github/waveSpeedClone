@@ -1021,8 +1021,23 @@ const ModelDetailPage: React.FC = () => {
               )}
 
               {activeTab === 'json' && (
-                <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
-                  <pre>{JSON.stringify(paramValues, null, 2)}</pre>
+                <div style={{ 
+                  background: '#f8f9fa', 
+                  padding: '1rem', 
+                  borderRadius: '0.5rem', 
+                  fontSize: '0.9rem',
+                  overflow: 'auto',
+                  maxHeight: '400px',
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+                }}>
+                  <pre style={{ 
+                    margin: 0, 
+                    whiteSpace: 'pre-wrap', 
+                    wordBreak: 'break-all',
+                    overflow: 'visible'
+                  }}>
+                    {JSON.stringify(paramValues, null, 2)}
+                  </pre>
                 </div>
               )}
 
