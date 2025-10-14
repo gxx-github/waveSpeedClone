@@ -159,33 +159,66 @@ const InputContainer = styled.div`
   gap: 0.5rem;
 `;
 
-const UploadRow = styled.div`
+const ImageUploadContainer = styled.div`
+  border: 2px dashed ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  padding: 1rem;
+  background: ${({ theme }) => theme.colors.surface};
+`;
+
+const InputWithUpload = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
 `;
 
 const UploadButton = styled.label`
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.55rem 0.9rem;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 0.5rem;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.text};
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
 
-  &:hover { border-color: ${({ theme }) => theme.colors.primary}; }
+  &:hover { 
+    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.primary};
+    color: white;
+  }
+`;
+
+const PreviewContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
 `;
 
 const Thumb = styled.img`
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
-  border-radius: 0.5rem;
+  border-radius: 6px;
   border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const DeleteButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 1.2rem;
+  
+  &:hover {
+    color: #ef4444;
+  }
 `;
 
 const ErrorMessage = styled.div`
@@ -274,17 +307,18 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
               }
             };
             return (
-              <div>
-                <Input
-                  type="text"
-                  value={value || ''}
-                  onChange={(e) => onChange(e.target.value)}
-                  placeholder={`Enter image url...`}
-                  disabled={disabled}
-                />
-                <UploadRow style={{ marginTop: '0.5rem' }}>
+              <ImageUploadContainer>
+                <InputWithUpload>
+                  <Input
+                    type="text"
+                    value={value || ''}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={`Enter image url...`}
+                    disabled={disabled}
+                    style={{ flex: 1 }}
+                  />
                   <UploadButton>
-                    📁 Upload
+                    📁
                     <input
                       type="file"
                       accept="image/*"
@@ -296,11 +330,19 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                       disabled={disabled}
                     />
                   </UploadButton>
-                  {src && (src.startsWith('http') || src.startsWith('data:')) && (
+                </InputWithUpload>
+                {src && (src.startsWith('http') || src.startsWith('data:')) && (
+                  <PreviewContainer>
                     <Thumb src={src} alt="preview" />
-                  )}
-                </UploadRow>
-              </div>
+                    <DeleteButton
+                      onClick={() => onChange('')}
+                      title="Delete image"
+                    >
+                      🗑️
+                    </DeleteButton>
+                  </PreviewContainer>
+                )}
+              </ImageUploadContainer>
             );
           }
         }
