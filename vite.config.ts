@@ -73,21 +73,21 @@ export default defineConfig(({ command, mode }) => {
               });
             },
           },
-          // 代理 /docs 到官方文档站（仅开发环境）
-          '/docs': {
-            target: 'https://wavespeed.ai',
-            changeOrigin: true,
-            secure: true,
-            rewrite: (path) => path.replace(/^\/docs/, '/docs'),
-            configure: (proxy, _options) => {
-              proxy.on('proxyRes', (proxyRes) => {
-                const sc = proxyRes.headers['set-cookie'];
-                if (Array.isArray(sc)) {
-                  proxyRes.headers['set-cookie'] = sc.map((v) => v.replace(/;\s*Domain=[^;]+/i, ''));
-                }
-              });
-            }
-          },
+          // // 代理 /docs 到官方文档站（仅开发环境）
+          // '/docs': {
+          //   target: 'https://wavespeed.ai',
+          //   changeOrigin: true,
+          //   secure: true,
+          //   rewrite: (path) => path.replace(/^\/docs/, '/docs'),
+          //   configure: (proxy, _options) => {
+          //     proxy.on('proxyRes', (proxyRes) => {
+          //       const sc = proxyRes.headers['set-cookie'];
+          //       if (Array.isArray(sc)) {
+          //         proxyRes.headers['set-cookie'] = sc.map((v) => v.replace(/;\s*Domain=[^;]+/i, ''));
+          //       }
+          //     });
+          //   }
+          // },
         },
       }),
     },

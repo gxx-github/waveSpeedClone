@@ -13,12 +13,14 @@ import LoginPage from './pages/LoginPage';
 import OAuthCallback from './pages/OAuthCallback';
 import ApiKeysPage from './pages/ApiKeysPage';
 import BillingPage from './pages/BillingPage';
+import DocsPage from './pages/DocsPage';
+import DocsLocalPage from './pages/DocsLocalPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   console.log('isAuthenticated', isAuthenticated);
-  // return <>{children}</>
+  return <>{children}</>
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
@@ -50,10 +52,7 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         } />
         <Route path="/collections/:collection" element={<ModelsPage />} />
-        <Route path="/docs" element={<div style={{ padding: '2rem', textAlign: 'center' }}>
-          <h1>Documentation</h1>
-          <p>API documentation coming soon...</p>
-        </div>} />
+        <Route path="/docs" element={<DocsLocalPage />} />
         <Route path="/creators" element={<div style={{ padding: '2rem', textAlign: 'center' }}>
           <h1>Creators</h1>
           <p>Creator resources coming soon...</p>
