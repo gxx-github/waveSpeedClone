@@ -725,6 +725,40 @@ const ModelDetailPage: React.FC = () => {
     }
   };
 
+  const generateCurlCommand = () => {
+    const apiKey = '${WAVESPEED_API_KEY}';
+    const endpoint = `https://aispeed.8lab.cn/api/v3/${model?.name}/generate`;
+    
+    // 构建请求数据
+    const requestData: any = {
+      enable_base64_output: false,
+      enable_sync_mode: false,
+      ...paramValues
+    };
+
+    // 处理图片参数
+    if (paramValues.image || paramValues.start_image || paramValues.last_image) {
+      const imageUrl = paramValues.image || paramValues.start_image || paramValues.last_image;
+      requestData.images = [imageUrl];
+      delete requestData.image;
+      delete requestData.start_image;
+      delete requestData.last_image;
+    }
+
+    const jsonData = JSON.stringify(requestData, null, 2);
+    
+    return `curl --location '${endpoint}' \\
+--header 'Content-Type: application/json' \\
+--header 'Authorization: Bearer ${apiKey}' \\
+--data-raw '${jsonData}'`;
+  };
+
+  const generateQueryCommand = () => {
+    const apiKey = '${WAVESPEED_API_KEY}';
+    return `curl --location 'https://aispeed.8lab.cn/api/v3/predictions/\${requestId}/result' \\
+--header 'Authorization: Bearer ${apiKey}'`;
+  };
+
   const renderPreviewContent = () => {
     switch (status) {
       case 'idle':
@@ -938,19 +972,68 @@ const ModelDetailPage: React.FC = () => {
 
               {activeTab === 'api' && (
                 <div>
-                  <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-                    Use this model via API endpoint:
-                  </p>
-                  <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
-                    <code>POST /api/model/{model?.provider}/{model?.name}/generate</code>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937' }}>
+                    Submit Task
+                  </h3>
+                  <div style={{ 
+                    background: '#1e1e1e', 
+                    color: '#d4d4d4', 
+                    padding: '1.5rem', 
+                    borderRadius: '0.5rem', 
+                    fontSize: '0.85rem',
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                    position: 'relative',
+                    overflow: 'auto'
+                  }}>
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: '1rem', 
+                      right: '1rem', 
+                      cursor: 'pointer',
+                      color: '#9ca3af',
+                      fontSize: '1rem'
+                    }} onClick={() => {
+                      const curlCommand = generateCurlCommand();
+                      navigator.clipboard.writeText(curlCommand);
+                      showToast('Curl command copied to clipboard!', { type: 'success' });
+                    }}>
+                      📋
+                    </div>
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+{generateCurlCommand()}
+                    </pre>
                   </div>
-                  <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#6b7280' }}>
-                    Include your API key in the Authorization header and send the parameters as JSON in the request body.
-                  </p>
-                  <div style={{ marginTop: '1rem' }}>
-                    <p style={{ marginBottom: '0.5rem', fontWeight: '500' }}>Available parameters:</p>
-                    <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.8rem' }}>
-                      <pre>{JSON.stringify(modelParams || {}, null, 2)}</pre>
+                  <div style={{ marginTop: '2rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937' }}>
+                      Query Result
+                    </h3>
+                    <div style={{ 
+                      background: '#1e1e1e', 
+                      color: '#d4d4d4', 
+                      padding: '1.5rem', 
+                      borderRadius: '0.5rem', 
+                      fontSize: '0.85rem',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                      position: 'relative',
+                      overflow: 'auto'
+                    }}>
+                      <div style={{ 
+                        position: 'absolute', 
+                        top: '1rem', 
+                        right: '1rem', 
+                        cursor: 'pointer',
+                        color: '#9ca3af',
+                        fontSize: '1rem'
+                      }} onClick={() => {
+                        const queryCommand = generateQueryCommand();
+                        navigator.clipboard.writeText(queryCommand);
+                        showToast('Query command copied to clipboard!', { type: 'success' });
+                      }}>
+                        📋
+                      </div>
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+{generateQueryCommand()}
+                      </pre>
                     </div>
                   </div>
                 </div>
