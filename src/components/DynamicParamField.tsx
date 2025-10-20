@@ -1,9 +1,18 @@
-import type React from 'react';
-import styled from 'styled-components';
+import React from 'react';
+import styled, { keyframes } from 'styled-components';
 import { api } from '../api/client';
 import { Input, Textarea } from '../styles/GlobalStyles';
 import type { ModelParam } from '../types/models';
-import { Info, FolderOpen, Trash2, RotateCcw } from 'lucide-react';
+import { Info, FolderOpen, Trash2, RotateCcw, Loader2 } from 'lucide-react';
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const SpinningIcon = styled(Loader2)`
+  animation: ${spin} 1s linear infinite;
+`;
 
 const FormGroup = styled.div`
   margin-bottom: 1.5rem;
@@ -181,7 +190,7 @@ const InputWithUpload = styled.div`
   margin-bottom: 0.5rem;
 `;
 
-const UploadButton = styled.label`
+const UploadButton = styled.label<{ $loading?: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -191,13 +200,14 @@ const UploadButton = styled.label`
   border-radius: 6px;
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.text};
-  cursor: pointer;
+  cursor: ${({ $loading }) => $loading ? 'not-allowed' : 'pointer'};
   transition: all 0.2s ease;
+  opacity: ${({ $loading }) => $loading ? 0.6 : 1};
 
   &:hover { 
-    border-color: ${({ theme }) => theme.colors.primary};
-    background: ${({ theme }) => theme.colors.primary};
-    color: white;
+    border-color: ${({ theme, $loading }) => $loading ? theme.colors.border : theme.colors.primary};
+    background: ${({ theme, $loading }) => $loading ? theme.colors.surface : theme.colors.primary};
+    color: ${({ $loading }) => $loading ? 'inherit' : 'white'};
   }
 
   svg {
@@ -265,6 +275,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
   error
 }) => {
   const { type, tooltip, multiline, min, max, step, display, resolution, aspect_ratio } = paramConfig;
+  const [isUploading, setIsUploading] = React.useState(false);
 
   const handleRandomize = () => {
     if (type === 'INT' || type === 'FLOAT') {
@@ -301,7 +312,9 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
           if (!multiline && isImageLike) {
             const src = (value || '').toString();
             const handleFile = async (file: File) => {
-              if (!file) return;
+              if (!file || isUploading) return;
+              
+              setIsUploading(true);
               try {
                 const resp: any = await api.uploadFile(file);
                 const url = typeof resp === 'string' ? resp : (resp?.download_url || resp?.url || resp?.data || '');
@@ -324,6 +337,8 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                   onChange(result);
                 };
                 reader.readAsDataURL(file);
+              } finally {
+                setIsUploading(false);
               }
             };
             return (
@@ -337,8 +352,12 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                     disabled={disabled}
                     style={{ flex: 1 }}
                   />
-                  <UploadButton>
-                    <FolderOpen size={18} />
+                  <UploadButton $loading={isUploading}>
+                    {isUploading ? (
+                      <SpinningIcon size={18} />
+                    ) : (
+                      <FolderOpen size={18} />
+                    )}
                     <input
                       type="file"
                       accept="image/*"
@@ -347,7 +366,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                         const file = e.target.files?.[0];
                         if (file) handleFile(file);
                       }}
-                      disabled={disabled}
+                      disabled={disabled || isUploading}
                     />
                   </UploadButton>
                 </InputWithUpload>

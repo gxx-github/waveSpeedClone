@@ -9,6 +9,16 @@ import DynamicParamField from '../components/DynamicParamField';
 import { useToast } from '../components/Toast';
 import type { ModelParams, ModelParam, ApiModel } from '../types/models';
 import { CheckCircle, Clock, Circle, Film, X, Settings, Clipboard, Play, Download, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { keyframes } from 'styled-components';
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const SpinningIcon = styled(Loader2)`
+  animation: ${spin} 1s linear infinite;
+`;
 
 const ModelDetailContainer = styled.div`
   padding: 2rem 0;
@@ -1169,7 +1179,7 @@ const ModelDetailPage: React.FC = () => {
                     >
                       {status === 'processing' ? (
                         <>
-                          <Loader2 size={16} className="animate-spin" />
+                          <SpinningIcon size={16} />
                           Generating...
                            {/* {Math.round(progress)}% */}
                         </>
