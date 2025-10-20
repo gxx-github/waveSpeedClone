@@ -276,6 +276,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
 }) => {
   const { type, tooltip, multiline, min, max, step, display, resolution, aspect_ratio } = paramConfig;
   const [isUploading, setIsUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleRandomize = () => {
     if (type === 'INT' || type === 'FLOAT') {
@@ -362,9 +363,16 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                       type="file"
                       accept="image/*"
                       style={{ display: 'none' }}
+                      ref={fileInputRef}
+                      onClick={(e) => {
+                        // 先清空 value，确保选择相同文件也能触发 onChange
+                        (e.currentTarget as HTMLInputElement).value = '';
+                      }}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleFile(file);
+                        // 读取后立即清空，避免二次选择同一文件无反应
+                        if (fileInputRef.current) fileInputRef.current.value = '';
                       }}
                       disabled={disabled || isUploading}
                     />
