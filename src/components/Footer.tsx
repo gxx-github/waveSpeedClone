@@ -162,11 +162,12 @@ const Footer: React.FC = () => {
             <SectionTitle>Navigation</SectionTitle>
             <FooterLink to="/">Home</FooterLink>
             <FooterLink to="/models">Explore</FooterLink>
+            <FooterLink to="/api-keys">API Keys</FooterLink>
           </FooterSection>
 
           <FooterSection>
-            <SectionTitle>Resources</SectionTitle>
-            <ExternalLink href="/docs">Documentation</ExternalLink>
+            {/* <SectionTitle>Resources</SectionTitle>
+            <ExternalLink href="/docs">Documentation</ExternalLink> */}
             {/* <ExternalLink href="/blog">Blog</ExternalLink>
             <SectionTitle style={{ marginTop: '1rem' }}>Github</SectionTitle>
             <ExternalLink href="https://github.com/WaveSpeedAI/agent-mcp-lab">Agent MCP Lab</ExternalLink>

@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Card, Button, Input } from '../styles/GlobalStyles';
+import { CustomSelect } from '../components/Select';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 import { useToast } from '../components/Toast';
@@ -447,11 +448,18 @@ const BillingPage: React.FC = () => {
                 <Input style={{ width: 56, textAlign: 'center' }} value={page} onChange={(e) => { const v = parseInt(e.target.value||'1',10); if(!Number.isNaN(v)) setPage(Math.max(1,v)); }} />
                 <Button size="sm" variant="secondary" onClick={() => { /* refresh */ }}>Go</Button>
                 <Button size="sm" variant="secondary" onClick={() => setPage((p)=> (p*pageSize<total? p+1 : p))} disabled={page*pageSize>=total}>Next</Button>
-                <select value={pageSize} onChange={(e)=>{ setPageSize(parseInt(e.target.value,10)); setPage(1); }} style={{ padding: '0.4rem 0.5rem', border: '1px solid var(--border,#e5e7eb)', borderRadius: 8 }}>
-                  <option value={10}>10/page</option>
-                  <option value={20}>20/page</option>
-                  <option value={50}>50/page</option>
-                </select>
+                {/* unified select */}
+                <div style={{ minWidth: 120 }}>
+                  <CustomSelect
+                    value={String(pageSize)}
+                    onChange={(v)=>{ setPageSize(parseInt(v,10)); setPage(1); }}
+                    options={[
+                      { value: '10', label: '10/page' },
+                      { value: '20', label: '20/page' },
+                      { value: '50', label: '50/page' },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
           </div>

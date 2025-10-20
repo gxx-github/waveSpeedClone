@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
 import { Input, Button } from '../styles/GlobalStyles';
+import { CustomSelect } from '../components/Select';
 import ModelCard from '../components/ModelCard';
 import { ModelsSkeletonLoader, LoadingState } from '../components/LoadingStates';
 import { api } from '../api/client';
@@ -215,20 +216,7 @@ const ModelsCount = styled.span`
   margin-left: 0.5rem;
 `;
 
-const SortSelect = styled.select`
-  padding: 0.5rem 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 0.5rem;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 0.9rem;
-  cursor: pointer;
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-  }
-`;
+const SortSelect = styled.div``;
 
 const ModelsGrid = styled.div`
   display: grid;
@@ -567,15 +555,18 @@ const ModelsPage: React.FC = () => {
                   <ModelsCount>({filteredAndSortedModels.length} models)</ModelsCount>
                 </ModelsTitle>
               </div>
-              <SortSelect
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-              >
-                <option value="popular">Most Popular</option>
-                <option value="newest">Newest</option>
-                <option value="name">Name A-Z</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
+              <SortSelect>
+                <CustomSelect
+                  value={sortBy}
+                  onChange={(v) => setSortBy(v as SortOption)}
+                  options={[
+                    { value: 'popular', label: 'Most Popular' },
+                    { value: 'newest', label: 'Newest' },
+                    { value: 'name', label: 'Name A-Z' },
+                    { value: 'price-low', label: 'Price: Low to High' },
+                    { value: 'price-high', label: 'Price: High to Low' },
+                  ]}
+                />
               </SortSelect>
             </ModelsHeader>
 

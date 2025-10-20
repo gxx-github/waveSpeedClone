@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { Input, Textarea } from '../styles/GlobalStyles';
 import type { ModelParam } from '../types/models';
 import { Info, FolderOpen, Trash2, RotateCcw, Loader2 } from 'lucide-react';
+import { CustomSelect } from './Select';
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -54,19 +55,7 @@ const TooltipIcon = styled.span`
   }
 `;
 
-const Select = styled.select`
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 0.5rem;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.text};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.colors.primary};
-    outline: none;
-  }
-`;
+const Select = styled.div``;
 
 const NumberInput = styled.input`
   width: 100%;
@@ -290,17 +279,15 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
   const renderField = () => {
     // 优先处理 options/select
     if (Array.isArray(paramConfig.options) && paramConfig.options.length > 0) {
+      const opts = paramConfig.options.map((opt) => ({ value: String(opt), label: String(opt) }));
       return (
-        <Select
-          value={value ?? paramConfig.default}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-        >
-          {paramConfig.options.map((opt) => (
-            <option key={String(opt)} value={String(opt)}>
-              {String(opt)}
-            </option>
-          ))}
+        <Select>
+          <CustomSelect
+            value={String(value ?? paramConfig.default ?? (opts[0]?.value || ''))}
+            onChange={(v) => onChange(v)}
+            options={opts}
+            disabled={disabled}
+          />
         </Select>
       );
     }
@@ -474,33 +461,29 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
       default:
         // 处理特殊的选择类型
         if (resolution) {
+          const opts = resolution.map((res) => ({ value: res, label: res }));
           return (
-            <Select
-              value={value || paramConfig.default}
-              onChange={(e) => onChange(e.target.value)}
-              disabled={disabled}
-            >
-              {resolution.map((res) => (
-                <option key={res} value={res}>
-                  {res}
-                </option>
-              ))}
+            <Select>
+              <CustomSelect
+                value={String(value || paramConfig.default || opts[0]?.value || '')}
+                onChange={(v) => onChange(v)}
+                options={opts}
+                disabled={disabled}
+              />
             </Select>
           );
         }
 
         if (aspect_ratio) {
+          const opts = aspect_ratio.map((ratio) => ({ value: ratio, label: ratio }));
           return (
-            <Select
-              value={value || paramConfig.default}
-              onChange={(e) => onChange(e.target.value)}
-              disabled={disabled}
-            >
-              {aspect_ratio.map((ratio) => (
-                <option key={ratio} value={ratio}>
-                  {ratio}
-                </option>
-              ))}
+            <Select>
+              <CustomSelect
+                value={String(value || paramConfig.default || opts[0]?.value || '')}
+                onChange={(v) => onChange(v)}
+                options={opts}
+                disabled={disabled}
+              />
             </Select>
           );
         }

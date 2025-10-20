@@ -6,6 +6,7 @@ import 'react-date-range/dist/theme/default.css';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, Input } from '../styles/GlobalStyles';
+import { CustomSelect } from '../components/Select';
 import { useToast } from '../components/Toast';
 import ModelCard from '../components/ModelCard';
 import { LoadingState } from '../components/LoadingStates';
@@ -318,14 +319,7 @@ const FilterInput = styled(Input)`
   font-size: 0.9rem;
 `;
 
-const FilterSelect = styled.select`
-  padding: 0.6rem 0.75rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 0.5rem;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 0.9rem;
-`;
+const FilterSelect = styled.div``;
 
 const ActionButtons = styled.div`
   display: flex;
@@ -1092,14 +1086,17 @@ const Dashboard: React.FC = () => {
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
             />
-            <FilterSelect 
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="completed">Completed</option>
-              <option value="processing">Processing</option>
-              <option value="failed">Failed</option>
+            <FilterSelect>
+              <CustomSelect
+                value={filters.status}
+                onChange={(v) => handleFilterChange('status', v)}
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'processing', label: 'Processing' },
+                  { value: 'failed', label: 'Failed' },
+                ]}
+              />
             </FilterSelect>
             <ActionButton variant="secondary" onClick={handleReset}>
               Reset
@@ -1221,10 +1218,16 @@ const Dashboard: React.FC = () => {
               }} />
               <Button variant="secondary" onClick={() => fetchOrders()}>Go</Button>
               <Button variant="secondary" onClick={() => setPage((p) => (p * pageSize < total ? p + 1 : p))} disabled={page * pageSize >= total}>Next</Button>
-              <FilterSelect value={pageSize} onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); }}>
-                <option value={10}>10/page</option>
-                <option value={20}>20/page</option>
-                <option value={50}>50/page</option>
+              <FilterSelect>
+                <CustomSelect
+                  value={String(pageSize)}
+                  onChange={(v) => { setPageSize(parseInt(v, 10)); setPage(1); }}
+                  options={[
+                    { value: '10', label: '10/page' },
+                    { value: '20', label: '20/page' },
+                    { value: '50', label: '50/page' },
+                  ]}
+                />
               </FilterSelect>
             </div>
           </div>

@@ -147,19 +147,7 @@ const Label = styled.label`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const Select = styled.select`
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 0.5rem;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.text};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.colors.primary};
-    outline: none;
-  }
-`;
+const Select = styled.div``;
 
 const CheckboxContainer = styled.div`
   display: flex;
@@ -578,11 +566,11 @@ const ModelDetailPage: React.FC = () => {
   }
 
   const handleGenerate = async () => {
-    // if (!isAuthenticated) {
-    //   showToast('请先登录后再运行模型', { type: 'error' });
-    //   navigate('/login');
-    //   return;
-    // }
+    if (!isAuthenticated) {
+      showToast('请先登录后再运行模型', { type: 'error' });
+      navigate('/login');
+      return;
+    }
     const missing: string[] = [];
     Object.entries(modelParams).forEach(([key, cfg]) => {
       if (cfg.required) {
@@ -712,10 +700,6 @@ const ModelDetailPage: React.FC = () => {
             errorMessage = raw;
           }
         } catch {}
-  
-        // if (/401|unauthorized/i.test(errorMessage)) {
-        //   errorMessage = '未授权访问，请先登录后重试';
-        // }
   
         showToast(`错误: ${errorMessage}`, { type: 'error' });
         return ;
