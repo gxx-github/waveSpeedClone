@@ -209,15 +209,23 @@ const Thumb = styled.img`
 `;
 
 const DeleteButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0.5rem;
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 1.2rem;
+  transition: all 0.2s ease;
   
   &:hover {
     color: #ef4444;
+  }
+
+  svg {
+    flex-shrink: 0;
   }
 `;
 

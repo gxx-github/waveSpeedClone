@@ -115,12 +115,20 @@ const HeroActions = styled.div`
 `;
 
 const HeroButton = styled(Button) <{ $variant?: 'primary' | 'secondary' }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 1rem 2rem;
   font-size: 1.1rem;
   font-weight: 600;
   border-radius: 0.75rem;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+
+  svg {
+    flex-shrink: 0;
+  }
 
   ${({ $variant }) => $variant === 'secondary' ? `
     background: rgba(255, 255, 255, 0.1);
@@ -365,7 +373,14 @@ const HotBadge = styled.span`
 
 const ViewAllButton = styled(Button)`
   margin: 2rem auto 0;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const LoadingSpinner = styled.div`

@@ -11,6 +11,7 @@ import ModelCard from '../components/ModelCard';
 import { LoadingState } from '../components/LoadingStates';
 import { models } from '../data/models';
 import { api } from '../api/client';
+import { Calendar, X, BarChart3, TrendingUp, DollarSign, Zap } from 'lucide-react';
 
 const DashboardContainer = styled.div`
   padding: 2rem 0;
@@ -73,6 +74,9 @@ const UsageDateRangeText = styled.span`
 const CloseIcon = styled.span`
   font-size: 0.8rem;
   opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const UsageContent = styled.div`
@@ -328,6 +332,14 @@ const ActionButtons = styled.div`
 
 const ActionButton = styled(Button)`
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const RequestsTable = styled.div`
@@ -540,6 +552,14 @@ const ConfirmTip = styled.div`
 const ConfirmButton = styled(Button)`
   font-size: 0.8rem;
   padding: 0.25rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const ConfirmText = styled.span`
@@ -868,11 +888,13 @@ const Dashboard: React.FC = () => {
             </div>
             <div style={{ position: 'relative' }}>
               <UsageDateRangeContainer onClick={() => setShowRangePicker(v => !v)}>
-                <span>📅</span>
+                <Calendar size={16} />
                 <UsageDateRangeText>
                   {usageDateRange.start.toLocaleDateString()} – {usageDateRange.end.toLocaleDateString()}
                 </UsageDateRangeText>
-                <CloseIcon>▾</CloseIcon>
+                <CloseIcon>
+                  <X size={12} />
+                </CloseIcon>
               </UsageDateRangeContainer>
               {showRangePicker && (
                 <div style={{ position: 'absolute', right: 0, zIndex: 30 }}>

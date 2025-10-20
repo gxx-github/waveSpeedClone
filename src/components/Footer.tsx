@@ -1,6 +1,7 @@
 import type React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { BarChart3, Circle } from 'lucide-react';
 
 const FooterContainer = styled.footer`
   background: ${({ theme }) => theme.colors.surface};
@@ -51,6 +52,12 @@ const LogoIcon = styled.div`
   font-weight: bold;
 `;
 
+const IconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const StatusIndicator = styled.div`
   display: flex;
   align-items: center;
@@ -67,6 +74,9 @@ const StatusDot = styled.div`
   height: 8px;
   background: #10b981;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const FooterMain = styled.div`
@@ -131,12 +141,18 @@ const Footer: React.FC = () => {
       <FooterContent>
         <FooterTop>
           <FooterLogo>
-            <LogoIcon>W</LogoIcon>
+            <LogoIcon>
+              <IconWrapper>
+                <BarChart3 size={20} />
+              </IconWrapper>
+            </LogoIcon>
             WaveSpeedAI
           </FooterLogo>
 
           <StatusIndicator>
-            <StatusDot />
+            <StatusDot>
+              <Circle size={4} fill="currentColor" />
+            </StatusDot>
             All services are online
           </StatusIndicator>
         </FooterTop>

@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Model, ApiModel } from '../types/models';
 import { Card, Button } from '../styles/GlobalStyles';
+import { Play, Zap, Star, Building2 } from 'lucide-react';
 
 const ModelCardContainer = styled(Card)`
   position: relative;
@@ -102,6 +103,12 @@ const ProviderIcon = styled.div`
   font-weight: bold;
 `;
 
+const IconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const ProviderName = styled.span`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -192,7 +199,9 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, apiModel }) => {
 
       <ModelProvider>
         <ProviderIcon>
-          {model.category?.charAt(0).toUpperCase() || ''}
+          <IconWrapper>
+            <Building2 size={12} />
+          </IconWrapper>
         </ProviderIcon>
         <ProviderName>{model.category || 'Unknown'}</ProviderName>
         <Price>${model.price || 0}</Price>
@@ -208,6 +217,7 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, apiModel }) => {
           size="sm"
           style={{ flex: 1 }}
         >
+          <Play size={16} />
           Try it
         </Button>
       </ActionContainer>

@@ -6,6 +6,7 @@ import ModelCard from '../components/ModelCard';
 import { ModelsSkeletonLoader, LoadingState } from '../components/LoadingStates';
 import { api } from '../api/client';
 import type { ApiModel, Model } from '../types/models';
+import { Search, Filter, X, Loader2 } from 'lucide-react';
 
 const ModelsPageContainer = styled.div`
   min-height: calc(100vh - 140px);
@@ -40,7 +41,9 @@ const SearchIcon = styled.div`
   transform: translateY(-50%);
   color: ${({ theme }) => theme.colors.textSecondary};
   pointer-events: none;
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const SearchInput = styled(Input)`
@@ -111,11 +114,6 @@ const SidebarTitle = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-
-  &::before {
-    content: '🔍';
-    font-size: 1rem;
-  }
 `;
 
 const FilterGroup = styled.div`
@@ -183,6 +181,14 @@ const ClearFiltersButton = styled(Button)`
   margin-top: 1rem;
   font-size: 0.9rem;
   padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const ModelsSection = styled.div`
@@ -245,6 +251,10 @@ const NoResults = styled.div`
 const NoResultsIcon = styled.div`
   font-size: 4rem;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const NoResultsTitle = styled.h3`
@@ -260,8 +270,15 @@ const NoResultsText = styled.p`
 
 const LoadMoreButton = styled(Button)`
   margin: 2rem auto 0;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 1rem 2rem;
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const StatsContainer = styled.div`
@@ -465,7 +482,9 @@ const ModelsPage: React.FC = () => {
           <Header>
             <SearchSection>
               <SearchContainer>
-                <SearchIcon>🔍</SearchIcon>
+                <SearchIcon>
+                  <Search size={20} />
+                </SearchIcon>
                 <SearchInput placeholder="Search models..." disabled />
               </SearchContainer>
             </SearchSection>
@@ -491,7 +510,9 @@ const ModelsPage: React.FC = () => {
         <Header>
           <SearchSection>
             <SearchContainer>
-              <SearchIcon>🔍</SearchIcon>
+              <SearchIcon>
+                <Search size={20} />
+              </SearchIcon>
               <SearchInput
                 type="text"
                 placeholder="Search models..."
@@ -504,7 +525,10 @@ const ModelsPage: React.FC = () => {
 
         <MainContent>
           <Sidebar>
-            <SidebarTitle>Filters</SidebarTitle>
+            <SidebarTitle>
+              <Filter size={20} />
+              Filters
+            </SidebarTitle>
             
             <FilterGroup>
               <FilterOptions>
@@ -530,6 +554,7 @@ const ModelsPage: React.FC = () => {
               onClick={clearAllFilters}
               variant="secondary"
             >
+              <X size={16} />
               Clear All Filters
             </ClearFiltersButton>
           </Sidebar>
@@ -585,7 +610,9 @@ const ModelsPage: React.FC = () => {
               </>
             ) : (
               <NoResults>
-                <NoResultsIcon>🔍</NoResultsIcon>
+                <NoResultsIcon>
+                  <Search size={48} />
+                </NoResultsIcon>
                 <NoResultsTitle>No models found</NoResultsTitle>
                 <NoResultsText>
                   Try adjusting your search criteria or filters to find what you're looking for.
@@ -593,7 +620,9 @@ const ModelsPage: React.FC = () => {
                 <Button
                   onClick={clearAllFilters}
                   variant="primary"
+                  style={{ margin:'0 auto' }}
                 >
+                  <X size={16} />
                   Clear All Filters
                 </Button>
               </NoResults>

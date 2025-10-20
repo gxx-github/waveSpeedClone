@@ -70,6 +70,10 @@ export const GlobalStyles = createGlobalStyle`
 `;
 
 export const Button = styled.button<{ variant?: 'primary' | 'secondary'; size?: 'sm' | 'md' | 'lg' }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: ${({ size }) =>
     size === 'sm' ? '0.5rem 1rem' :
     size === 'lg' ? '1rem 2rem' :
@@ -93,6 +97,10 @@ export const Button = styled.button<{ variant?: 'primary' | 'secondary'; size?: 
       background: ${theme.colors.surface};
     }
   `}
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 export const Card = styled.div`

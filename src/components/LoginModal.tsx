@@ -3,6 +3,7 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, Input } from '../styles/GlobalStyles';
+import { X, Mail, Lock, Loader2 } from 'lucide-react';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -34,9 +35,11 @@ const CloseButton = styled.button`
   right: 1rem;
   background: none;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 1.5rem;
   padding: 0.25rem;
   border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
@@ -181,7 +184,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
   return (
     <ModalOverlay onClick={handleOverlayClick}>
       <ModalContent>
-        <CloseButton onClick={onClose}>×</CloseButton>
+        <CloseButton onClick={onClose}>
+          <X size={20} />
+        </CloseButton>
 
         <DiscountBanner>
           <DiscountTitle>Surprise benefits!</DiscountTitle>
@@ -201,7 +206,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          {isLoading ? 'Signing in...' : 'Continue with Google'}
+          {isLoading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            'Continue with Google'
+          )}
         </GoogleButton>
 
         <Divider>
@@ -236,7 +248,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
           {error && <ErrorMessage>{error}</ErrorMessage>}
 
           <Button type="submit" variant="primary" disabled={isLoading}>
-            {isLoading ? 'Signing In...' : 'Sign In'}
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </Button>
         </Form>
       </ModalContent>

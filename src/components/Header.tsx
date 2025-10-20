@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, Input } from '../styles/GlobalStyles';
 import LoginModal from './LoginModal';
+import { Search, Moon, Sun, User, LogOut, Settings, CreditCard, Key, BarChart3 } from 'lucide-react';
 
 const HeaderContainer = styled.header<{ $scrolled?: boolean }>`
   background: ${({ theme, $scrolled }) => 
@@ -54,6 +55,12 @@ const LogoIcon = styled.div`
   font-weight: bold;
 `;
 
+const IconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const Nav = styled.nav`
   display: flex;
   align-items: center;
@@ -65,6 +72,9 @@ const Nav = styled.nav`
 `;
 
 const NavLink = styled(Link)<{ $active?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-weight: 500;
@@ -74,6 +84,10 @@ const NavLink = styled(Link)<{ $active?: boolean }>`
   &:hover {
     color: ${({ theme }) => theme.colors.primary};
     background: ${({ theme }) => theme.colors.surface};
+  }
+
+  svg {
+    margin-right: 4px;
   }
 `;
 
@@ -102,6 +116,9 @@ const SearchIcon = styled.div`
   top: 50%;
   transform: translateY(-50%);
   color: ${({ theme }) => theme.colors.textSecondary};
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const RightSection = styled.div`
@@ -187,13 +204,19 @@ const MenuList = styled.div`
 const MenuItem = styled(Link)`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.75rem;
   padding: 0.6rem 0.75rem;
   border-radius: 0.5rem;
   color: ${({ theme }) => theme.colors.text};
+  transition: all 0.2s ease;
 
-  &:hover { background: ${({ theme }) => theme.colors.surface}; }
+  &:hover { 
+    background: ${({ theme }) => theme.colors.surface}; 
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const MenuButton = styled.button`
@@ -205,8 +228,15 @@ const MenuButton = styled.button`
   border-radius: 0.5rem;
   background: transparent;
   color: ${({ theme }) => theme.colors.text};
+  transition: all 0.2s ease;
 
-  &:hover { background: ${({ theme }) => theme.colors.surface}; }
+  &:hover { 
+    background: ${({ theme }) => theme.colors.surface}; 
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const Divider = styled.div`
@@ -259,26 +289,36 @@ const Header: React.FC = () => {
       <HeaderContainer $scrolled={scrolled}>
         <HeaderContent>
           <Logo to="/">
-            <LogoIcon>W</LogoIcon>
+            <LogoIcon>
+              <IconWrapper>
+                <BarChart3 size={20} />
+              </IconWrapper>
+            </LogoIcon>
             WaveSpeedAI
           </Logo>
 
           <SearchContainer>
-            <SearchIcon>🔍</SearchIcon>
+            <SearchIcon>
+              <Search size={18} />
+            </SearchIcon>
             <SearchInput placeholder="Search models..." />
           </SearchContainer>
 
           <Nav>
             <NavLink to="/dashboard" $active={isActive('/dashboard') || location.pathname.startsWith('/dashboard/')}>
+              <BarChart3 size={16} />
               Dashboard
             </NavLink>
             <NavLink to="/models" $active={isActive('/models')}>
+              <Search size={16} />
               Explore
             </NavLink>
             <NavLink to="/api-keys" $active={isActive('/api-keys')}>
+              <Key size={16} />
               API Keys
             </NavLink>
             <NavLink to="/billing" $active={isActive('/billing')}>
+              <CreditCard size={16} />
               Billing
             </NavLink>
             {/* <a href="/docs/docs" target="_blank" rel="noopener noreferrer" style={{
@@ -294,7 +334,7 @@ const Header: React.FC = () => {
 
           <RightSection>
             <ThemeToggle onClick={toggleTheme}>
-              {isDark ? '☀️' : '🌙'}
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </ThemeToggle>
 
             {isAuthenticated ? (
@@ -313,24 +353,39 @@ const Header: React.FC = () => {
                     </DropHeader>
                     <Divider />
                     <MenuList>
-                      <MenuItem to="/billing">Billing</MenuItem>
-                      <MenuItem to="/api-keys">API Keys</MenuItem>
+                      <MenuItem to="/billing">
+                        <CreditCard size={16} />
+                        Billing
+                      </MenuItem>
+                      <MenuItem to="/api-keys">
+                        <Key size={16} />
+                        API Keys
+                      </MenuItem>
                       {/* <MenuButton onClick={() => setOpen(false)}>Create Team</MenuButton>
                       <MenuButton onClick={() => setOpen(false)}>My Inspiration</MenuButton>
                       <MenuButton onClick={() => setOpen(false)}>Support</MenuButton> */}
                       <MenuButton onClick={() => { toggleTheme(); setOpen(false); }}>
-                        <span>Theme</span>
+                        <span>
+                          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                          Theme
+                        </span>
                         <span>{isDark ? 'Dark' : 'Light'}</span>
                       </MenuButton>
                       <Divider />
-                      <MenuButton onClick={() => { setOpen(false); logout(); }}>Sign out</MenuButton>
+                      <MenuButton onClick={() => { setOpen(false); logout(); }}>
+                        <LogOut size={16} />
+                        Sign out
+                      </MenuButton>
                     </MenuList>
                   </Dropdown>
                 )}
               </UserMenu>
             ) : (
               <Link to="/login">
-                <Button variant="primary" size="sm">Sign In</Button>
+                <Button variant="primary" size="sm">
+                  <User size={16} />
+                  Sign In
+                </Button>
               </Link>
             )}
           </RightSection>

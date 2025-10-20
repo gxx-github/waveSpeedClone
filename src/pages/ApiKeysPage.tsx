@@ -79,6 +79,9 @@ const KeyCell = styled(Cell)`
 `;
 
 const EyeButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -90,6 +93,10 @@ const EyeButton = styled.button`
   &:hover { 
     background: ${({ theme }) => theme.colors.surface};
     color: ${({ theme }) => theme.colors.text};
+  }
+
+  svg {
+    flex-shrink: 0;
   }
 `;
 
