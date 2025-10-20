@@ -297,12 +297,12 @@ const Header: React.FC = () => {
             WaveSpeedAI
           </Logo>
 
-          <SearchContainer>
+          {/* <SearchContainer>
             <SearchIcon>
               <Search size={18} />
             </SearchIcon>
             <SearchInput placeholder="Search models..." />
-          </SearchContainer>
+          </SearchContainer> */}
 
           <Nav>
             <NavLink to="/dashboard" $active={isActive('/dashboard') || location.pathname.startsWith('/dashboard/')}>

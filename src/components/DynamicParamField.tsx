@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { api } from '../api/client';
 import { Input, Textarea } from '../styles/GlobalStyles';
 import type { ModelParam } from '../types/models';
+import { Info, FolderOpen, Trash2, RotateCcw } from 'lucide-react';
 
 const FormGroup = styled.div`
   margin-bottom: 1.5rem;
@@ -20,7 +21,14 @@ const TooltipIcon = styled.span`
   margin-left: 0.5rem;
   color: ${({ theme }) => theme.colors.textSecondary};
   cursor: help;
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
   
   &:hover::after {
     content: attr(data-tooltip);
@@ -184,12 +192,16 @@ const UploadButton = styled.label`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.text};
   cursor: pointer;
-  font-size: 1.2rem;
+  transition: all 0.2s ease;
 
   &:hover { 
     border-color: ${({ theme }) => theme.colors.primary};
     background: ${({ theme }) => theme.colors.primary};
     color: white;
+  }
+
+  svg {
+    flex-shrink: 0;
   }
 `;
 
@@ -326,7 +338,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                     style={{ flex: 1 }}
                   />
                   <UploadButton>
-                    📁
+                    <FolderOpen size={18} />
                     <input
                       type="file"
                       accept="image/*"
@@ -346,7 +358,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                       onClick={() => onChange('')}
                       title="Delete image"
                     >
-                      🗑️
+                      <Trash2 size={16} />
                     </DeleteButton>
                   </PreviewContainer>
                 )}
@@ -412,7 +424,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
               disabled={disabled}
               title="Randomize value"
             >
-              ↻
+              <RotateCcw size={16} />
             </RandomizeButton>
           </InputContainer>
         );
@@ -484,7 +496,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
         {paramName}{paramConfig.required ? ' *' : ''}
         {tooltip && (
           <TooltipIcon data-tooltip={tooltip}>
-            ℹ️
+            <Info size={14} />
           </TooltipIcon>
         )}
       </Label>
