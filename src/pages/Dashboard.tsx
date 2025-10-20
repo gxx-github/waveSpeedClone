@@ -11,7 +11,7 @@ import ModelCard from '../components/ModelCard';
 import { LoadingState } from '../components/LoadingStates';
 import { models } from '../data/models';
 import { api } from '../api/client';
-import { Calendar, X, BarChart3, TrendingUp, DollarSign, Zap } from 'lucide-react';
+import { Calendar, X, BarChart3, TrendingUp, DollarSign, Zap, Info, Trash2, Download, Share2, CheckCircle, Clock, Circle } from 'lucide-react';
 
 const DashboardContainer = styled.div`
   padding: 2rem 0;
@@ -292,6 +292,9 @@ const Reminder = styled.div`
 
 const ReminderIcon = styled.span`
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const Filters = styled.div`
@@ -504,6 +507,9 @@ const ActionIcons = styled.div`
 `;
 
 const ActionIcon = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -515,6 +521,10 @@ const ActionIcon = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
     color: ${({ theme }) => theme.colors.primary};
+  }
+
+  svg {
+    flex-shrink: 0;
   }
 `;
 
@@ -1055,7 +1065,9 @@ const Dashboard: React.FC = () => {
           </RequestsHeader>
 
           <Reminder>
-            <ReminderIcon>ℹ️</ReminderIcon>
+            <ReminderIcon>
+              <Info size={16} />
+            </ReminderIcon>
             <strong>Reminder</strong> Your outputs are stored for 7 days only. Make sure to download and save them before they expire.
           </Reminder>
 
@@ -1155,12 +1167,16 @@ const Dashboard: React.FC = () => {
                 <TableCell>{formatDateTime(request.created)}</TableCell>
                 <TableCell>
                   <ActionIcons>
-                    {/* <ActionIcon title="Share">📤</ActionIcon> */}
+                    {/* <ActionIcon title="Share"><Share2 size={16} /></ActionIcon> */}
                     <ActionIcon title="Download" onClick={async () => {
                       if (!request.output) return;
                       await downloadFromUrl(String(request.output));
-                    }}>⬇️</ActionIcon>
-                    <ActionIcon title="Delete" onClick={() => setConfirmDeleteFor(request.id)}>🗑️</ActionIcon>
+                    }}>
+                      <Download size={16} />
+                    </ActionIcon>
+                    <ActionIcon title="Delete" onClick={() => setConfirmDeleteFor(request.id)}>
+                      <Trash2 size={16} />
+                    </ActionIcon>
                     {confirmDeleteFor === request.id && (
                       <ConfirmTip>
                         <ConfirmText>确认删除？</ConfirmText>

@@ -8,6 +8,7 @@ import { api } from '../api/client';
 import DynamicParamField from '../components/DynamicParamField';
 import { useToast } from '../components/Toast';
 import type { ModelParams, ModelParam, ApiModel } from '../types/models';
+import { CheckCircle, Clock, Circle, Film, X, Settings, Clipboard, Play, Download, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const ModelDetailContainer = styled.div`
   padding: 2rem 0;
@@ -261,11 +262,14 @@ const StepItem = styled.div<{ $active?: boolean; $completed?: boolean }>`
   gap: 0.5rem;
   opacity: ${({ $active, $completed }) => $active || $completed ? 1 : 0.5};
   color: ${({ theme, $completed }) => $completed ? theme.colors.primary : 'inherit'};
+`;
 
-  &::before {
-    content: '${({ $completed, $active }) => $completed ? '✓' : $active ? '⏳' : '○'}';
-    width: 16px;
-  }
+const StepIcon = styled.div<{ $active?: boolean; $completed?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
 `;
 
 const DownloadButton = styled(Button)`
@@ -728,7 +732,7 @@ const ModelDetailPage: React.FC = () => {
 
   const generateCurlCommand = () => {
     const apiKey = '${WAVESPEED_API_KEY}';
-    const endpoint = `https://aispeed.8lab.cn/api/v3/${model?.name}/generate`;
+    const endpoint = `https://aispeed.8lab.cn/api/order`;
     
     // 构建请求数据
     const requestData: any = {
@@ -756,7 +760,8 @@ const ModelDetailPage: React.FC = () => {
 
   const generateQueryCommand = () => {
     const apiKey = '${WAVESPEED_API_KEY}';
-    return `curl --location 'https://aispeed.8lab.cn/api/v3/predictions/\${requestId}/result' \\
+    const uuid = '${uuid}';
+    return `curl --location 'https://aispeed.8lab.cn/api/order/result?request_id=${uuid}' \\
 --header 'Authorization: Bearer ${apiKey}'`;
   };
 
@@ -819,7 +824,9 @@ const ModelDetailPage: React.FC = () => {
                 }
               })()
             ) : (
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎬</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                <Film size={48} />
+              </div>
             )}
             <PreviewText>Ready to generate with {model.name}</PreviewText>
             <StatusIndicator $status="idle">
@@ -845,6 +852,15 @@ const ModelDetailPage: React.FC = () => {
                     $active={index === currentStep}
                     $completed={index < currentStep}
                   >
+                    <StepIcon $active={index === currentStep} $completed={index < currentStep}>
+                      {index < currentStep ? (
+                        <CheckCircle size={16} />
+                      ) : index === currentStep ? (
+                        <Clock size={16} />
+                      ) : (
+                        <Circle size={16} />
+                      )}
+                    </StepIcon>
                     {step}
                   </StepItem>
                 ))}
@@ -882,7 +898,9 @@ const ModelDetailPage: React.FC = () => {
       case 'error':
         return (
           <>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <X size={48} />
+            </div>
             <PreviewText>Generation failed</PreviewText>
             <StatusIndicator $status="idle">
               <span>●</span>
@@ -913,7 +931,7 @@ const ModelDetailPage: React.FC = () => {
 
         <ModelHeader>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <span style={{ fontSize: '1.5rem' }}>🎬</span>
+            <Film size={24} />
             <span style={{ color: '#6b7280' }}>{model?.type}</span>
           </div>
 
@@ -985,7 +1003,9 @@ const ModelDetailPage: React.FC = () => {
                       ))
                   ) : (
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                      <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>⚙️</div>
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                        <Settings size={24} />
+                      </div>
                       <p>No parameters available for this model</p>
                     </div>
                   )}
@@ -1062,13 +1082,18 @@ const ModelDetailPage: React.FC = () => {
                       right: '1rem', 
                       cursor: 'pointer',
                       color: '#9ca3af',
-                      fontSize: '1rem'
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0.25rem',
+                      borderRadius: '0.25rem',
+                      transition: 'all 0.2s ease'
                     }} onClick={() => {
                       const curlCommand = generateCurlCommand();
                       navigator.clipboard.writeText(curlCommand);
                       showToast('Curl command copied to clipboard!', { type: 'success' });
                     }}>
-                      📋
+                      <Clipboard size={16} />
                     </div>
                     <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
 {generateCurlCommand()}
@@ -1094,13 +1119,18 @@ const ModelDetailPage: React.FC = () => {
                         right: '1rem', 
                         cursor: 'pointer',
                         color: '#9ca3af',
-                        fontSize: '1rem'
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '0.25rem',
+                        borderRadius: '0.25rem',
+                        transition: 'all 0.2s ease'
                       }} onClick={() => {
                         const queryCommand = generateQueryCommand();
                         navigator.clipboard.writeText(queryCommand);
                         showToast('Query command copied to clipboard!', { type: 'success' });
                       }}>
-                        📋
+                        <Clipboard size={16} />
                       </div>
                       <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
 {generateQueryCommand()}

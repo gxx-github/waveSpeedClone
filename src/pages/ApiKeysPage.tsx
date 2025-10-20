@@ -217,7 +217,7 @@ const ApiKeysPage: React.FC = () => {
                       <Button size="sm" style={{ marginRight: '0.5rem' }} onClick={() => copyKey(k.keyMasked)}>
                         Copy
                       </Button>
-                      <Button size="sm" variant="secondary">Revoke</Button>
+                      {/* <Button size="sm" variant="secondary">Revoke</Button> */}
                     </Cell>
                   </Row>
                 );

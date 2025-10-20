@@ -17,8 +17,7 @@ import BillingPage from './pages/BillingPage';
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  console.log('isAuthenticated', isAuthenticated);
-  // return <>{children}</>
+  return <>{children}</>
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
