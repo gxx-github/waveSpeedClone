@@ -5,7 +5,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function getAuthToken(): string | null {
   try {
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NjA5NDQ2NTV9.k3PARrAr8W8ceRMVej2AXb0HUSqQz9iWIRtUapkVy54'
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdGl0Y2hvbmUyM0BnbWFpbC5jb20iLCJleHAiOjE3NjA5NTA2ODd9.__7ihnjBbORHLgWgFbf6fd8L-ccfJsi4dHwHAl0y-kM'
     return localStorage.getItem('token');
   } catch {
     return null;
@@ -137,6 +137,9 @@ export const api = {
   },
   createOrder: (payload: any) => apiRequest<any>('/api/order', { method: 'POST', body: JSON.stringify(payload) }),
   deleteOrder: (id: number) => apiRequest<any>('/api/order', { method: 'DELETE', body: JSON.stringify({ id }) }),
+  // Order result polling
+  getOrderResult: (uuid: string) =>
+    apiRequest<any>(`/api/order/result?request_id=${encodeURIComponent(uuid)}`, { method: 'GET' }),
   
   // Dashboard
   getUserUsage: (params?: { start_time?: number; end_time?: number }) => {

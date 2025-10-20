@@ -8,7 +8,7 @@ import { api } from '../api/client';
 import DynamicParamField from '../components/DynamicParamField';
 import { useToast } from '../components/Toast';
 import type { ModelParams, ModelParam, ApiModel } from '../types/models';
-import { CheckCircle, Clock, Circle, Film, X, Settings, Clipboard, Play, Download, ArrowLeft, ArrowRight } from 'lucide-react';
+import { CheckCircle, Clock, Circle, Film, X, Settings, Clipboard, Play, Download, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 
 const ModelDetailContainer = styled.div`
   padding: 2rem 0;
@@ -519,10 +519,6 @@ const ModelDetailPage: React.FC = () => {
         setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(progressInterval);
-            if (!generatedResult) {
-              setStatus('completed');
-              setGeneratedResult(mockResults[Math.floor(Math.random() * mockResults.length)]);
-            }
             return 100;
           }
           return prev + 2;
@@ -572,11 +568,11 @@ const ModelDetailPage: React.FC = () => {
   }
 
   const handleGenerate = async () => {
-    if (!isAuthenticated) {
-      showToast('请先登录后再运行模型', { type: 'error' });
-      navigate('/login');
-      return;
-    }
+    // if (!isAuthenticated) {
+    //   showToast('请先登录后再运行模型', { type: 'error' });
+    //   navigate('/login');
+    //   return;
+    // }
     const missing: string[] = [];
     Object.entries(modelParams).forEach(([key, cfg]) => {
       if (cfg.required) {
@@ -613,6 +609,85 @@ const ModelDetailPage: React.FC = () => {
       console.log('Submitting order with payload:', payload);
       const res = await api.createOrder(payload as any);
       console.log('Order created successfully:', res);
+      
+      // 检查是否有错误信息（如超时等）
+      if (res && res.detail && typeof res.detail === 'string') {
+        const errorDetail = res.detail.toLowerCase();
+        if (errorDetail.includes('timeout') || errorDetail.includes('timed out')) {
+          setStatus('error');
+          showToast('生成超时，请重试', { type: 'error' });
+          return;
+        }
+      }
+      
+      // 请求创建成功但无结果，需要使用返回的 uuid 轮询查询结果
+      if (res && res.uuid) {
+        showToast('任务已提交，正在生成中...', { type: 'info' });
+
+        const requestId: string = String(res.uuid);
+        const startTime = Date.now();
+        const timeoutMs = Math.max(15000, (estimatedTime || 15) * 1000 * 2); // 至少 15s，上限=估计时长*2
+        const pollIntervalMs = 1500;
+
+        const pollResult = async (): Promise<void> => {
+          try {
+            const result = await api.getOrderResult(requestId);
+            // 兼容不同返回结构：成功时可能包含 url/image_url/result_url/preview_url/output_url 或 status/completed 标记
+            const possibleUrl = result?.result_url || result?.url || result?.image_url || result?.preview_url || result?.output_url;
+            const statusText = (result?.status || '').toString().toLowerCase();
+
+            // 检查状态是否为 completed
+            if (statusText === 'completed') {
+              if (typeof possibleUrl === 'string' && possibleUrl) {
+                setGeneratedResult(possibleUrl);
+                setStatus('completed');
+                showToast('生成成功！', { type: 'success' });
+                return;
+              } else {
+                // 即使状态是 completed 但没有 URL，也认为生成失败
+                setStatus('error');
+                showToast('生成完成但未获取到结果，请重试', { type: 'error' });
+                return;
+              }
+            }
+
+            // 检查是否有直接的结果 URL（兼容旧格式，但需要确保不是 processing 状态）
+            if (typeof possibleUrl === 'string' && possibleUrl && statusText !== 'processing') {
+              setGeneratedResult(possibleUrl);
+              setStatus('completed');
+              showToast('生成成功！', { type: 'success' });
+              return;
+            }
+
+            if (statusText === 'failed' || statusText === 'error') {
+              setStatus('error');
+              showToast('生成失败，请重试', { type: 'error' });
+              return;
+            }
+
+            if (Date.now() - startTime > timeoutMs) {
+              setStatus('error');
+              showToast('生成超时，请稍后重试', { type: 'error' });
+              return;
+            }
+
+            setTimeout(pollResult, pollIntervalMs);
+          } catch (e) {
+            // 轮询单次失败不立刻失败，继续重试直到超时
+            if (Date.now() - startTime > timeoutMs) {
+              setStatus('error');
+              showToast('生成超时，请稍后重试', { type: 'error' });
+              return;
+            }
+            setTimeout(pollResult, pollIntervalMs);
+          }
+        };
+
+        // 启动轮询
+        setTimeout(pollResult, pollIntervalMs);
+        // 注意：这里不 return，让方法继续执行到结尾
+      }
+
       if(res.error || res.code ===400){
         setStatus('error');
 
@@ -628,9 +703,9 @@ const ModelDetailPage: React.FC = () => {
           }
         } catch {}
   
-        if (/401|unauthorized/i.test(errorMessage)) {
-          errorMessage = '未授权访问，请先登录后重试';
-        }
+        // if (/401|unauthorized/i.test(errorMessage)) {
+        //   errorMessage = '未授权访问，请先登录后重试';
+        // }
   
         showToast(`错误: ${errorMessage}`, { type: 'error' });
         return ;
@@ -642,13 +717,9 @@ const ModelDetailPage: React.FC = () => {
         setStatus('completed');
         showToast('生成成功！', { type: 'success' });
       } else {
-        console.log('Order submitted, waiting for result...');
-        showToast('任务已提交，正在生成中...', { type: 'info' });
-        setTimeout(() => {
-          setGeneratedResult(mockResults[Math.floor(Math.random() * mockResults.length)]);
-          setStatus('completed');
-          showToast('生成完成！', { type: 'success' });
-        }, 3000);
+        // 无 uuid 且无直链，视为异常
+        console.log('Order submitted, but no uuid and no direct result returned');
+        // showToast('任务已提交，但未获取到任务标识，请稍后在历史中查看', { type: 'warning' as any });
       }
     } catch (err: any) {
       console.error('Create order failed:', err);
@@ -872,26 +943,88 @@ const ModelDetailPage: React.FC = () => {
       case 'completed':
         return (
           <>
-            {/* {generatedResult && (
+            {generatedResult && (
               <GenerationResult>
-                {model.type === 'video' ? (
-                  <GeneratedVideo controls autoPlay muted>
-                    <source src={generatedResult} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </GeneratedVideo>
-                ) : (
-                  <GeneratedImage src={generatedResult} alt="Generated content" />
-                )}
+                {(() => {
+                  const url = generatedResult.toLowerCase();
+                  const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('.mov');
+                  const isImage = url.includes('.png') || url.includes('.jpg') || url.includes('.jpeg') || url.includes('.gif') || url.includes('.webp') || url.includes('.svg');
+                  
+                  if (isVideo) {
+                    return (
+                      <GeneratedVideo 
+                        controls 
+                        autoPlay 
+                        muted
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '500px', 
+                          objectFit: 'cover',
+                          borderRadius: '0.5rem',
+                          marginBottom: '1rem'
+                        }}
+                      >
+                        <source src={generatedResult} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </GeneratedVideo>
+                    );
+                  } else if (isImage) {
+                    return (
+                      <GeneratedImage 
+                        src={generatedResult} 
+                        alt="Generated content" 
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '500px', 
+                          objectFit: 'cover',
+                          borderRadius: '0.5rem',
+                          marginBottom: '1rem'
+                        }}
+                      />
+                    );
+                  } else {
+                    // 如果无法确定类型，默认显示为图片
+                    return (
+                      <GeneratedImage 
+                        src={generatedResult} 
+                        alt="Generated content" 
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '500px', 
+                          objectFit: 'cover',
+                          borderRadius: '0.5rem',
+                          marginBottom: '1rem'
+                        }}
+                      />
+                    );
+                  }
+                })()}
               </GenerationResult>
-            )} */}
+            )}
             <StatusIndicator $status="completed">
               <span>●</span>
               Generation completed successfully!
             </StatusIndicator>
-            {/* <DownloadButton onClick={handleDownload} variant="secondary">
-              <span>⬇️</span>
-              Download Result
-            </DownloadButton> */}
+            {generatedResult && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                <Button 
+                  onClick={() => window.open(generatedResult, '_blank')} 
+                  variant="secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <Download size={16} />
+                  Download Result
+                </Button>
+                {/* <Button 
+                  onClick={() => navigator.clipboard.writeText(generatedResult)} 
+                  variant="secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <Clipboard size={16} />
+                  Copy URL
+                </Button> */}
+              </div>
+            )}
           </>
         );
 
@@ -1034,7 +1167,19 @@ const ModelDetailPage: React.FC = () => {
                       style={{ flex: 2 }}
                       disabled={status === 'processing'}
                     >
-                      {status === 'processing' ? `Generating... ${Math.round(progress)}%` : `Run $${model?.price || 0}`}
+                      {status === 'processing' ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Generating...
+                           {/* {Math.round(progress)}% */}
+                        </>
+                      ) : status === 'completed' ? (
+                        'Run Again'
+                      ) : status === 'error' ? (
+                        'Retry'
+                      ) : (
+                        `Run $${model?.price || 0}`
+                      )}
                     </Button>
                   </div>
                 </>
