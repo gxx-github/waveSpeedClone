@@ -624,7 +624,7 @@ const ModelDetailPage: React.FC = () => {
 
         const requestId: string = String(res.uuid);
         const startTime = Date.now();
-        const timeoutMs = Math.max(15000, (estimatedTime || 15) * 1000 * 2); // 至少 15s，上限=估计时长*2
+        const timeoutMs = Math.max(30000, (estimatedTime || 15) * 1000 * 2); // 至少 15s，上限=估计时长*2
         const pollIntervalMs = 1500;
 
         const pollResult = async (): Promise<void> => {

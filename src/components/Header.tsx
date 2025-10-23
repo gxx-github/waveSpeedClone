@@ -364,13 +364,13 @@ const Header: React.FC = () => {
                       {/* <MenuButton onClick={() => setOpen(false)}>Create Team</MenuButton>
                       <MenuButton onClick={() => setOpen(false)}>My Inspiration</MenuButton>
                       <MenuButton onClick={() => setOpen(false)}>Support</MenuButton> */}
-                      <MenuButton onClick={() => { toggleTheme(); setOpen(false); }}>
+                      {/* <MenuButton onClick={() => { toggleTheme(); setOpen(false); }}>
                         <span>
                           {isDark ? <Sun size={16} /> : <Moon size={16} />}
                           Theme
                         </span>
                         <span>{isDark ? 'Dark' : 'Light'}</span>
-                      </MenuButton>
+                      </MenuButton> */}
                       <Divider />
                       <MenuButton onClick={() => { setOpen(false); logout(); }}>
                         <LogOut size={16} />
