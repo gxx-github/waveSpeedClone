@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../styles/GlobalStyles';
 import ModelCard from '../components/ModelCard';
 import { api } from '../api/client';
@@ -471,6 +472,7 @@ const convertApiModelToModel = (apiModel: ApiModel): Model => {
 };
 
 const HomePage: React.FC = () => {
+  const { t } = useTranslation();
   const [apiModels, setApiModels] = useState<ApiModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -517,16 +519,16 @@ const HomePage: React.FC = () => {
           <video src="https://d1q70pf5vjeyhc.wavespeed.ai/media/videos/1752735441692270409_ABJFCxuq.mp4" className="absolute top-0 left-0 w-full h-full object-cover" autoPlay={true} poster="https://d1q70pf5vjeyhc.wavespeed.ai/media/images/1752735588486465176_uELKGDzv.png" data-sentry-component="VideoBanner" data-sentry-source-file="home.tsx"></video>
         </VideoDom>
         <HeroContent>
-          <HeroTitle>Ultimate AI Media Generation Platform</HeroTitle>
+          <HeroTitle>{t('home.title')}</HeroTitle>
           <HeroSubtitle>
-            WaveSpeedAI accelerates AI Image and Video generation for you to build, create, and scale faster.
+            {t('home.subtitle')}
           </HeroSubtitle>
           <HeroActions>
             <HeroButton as={Link} to="/models" $variant="primary">
-              Explore Models
+              {t('home.exploreModels')}
             </HeroButton>
             <HeroButton as={Link} to="/docs" $variant="secondary">
-              API Doc
+              {t('home.apiDoc')}
             </HeroButton>
           </HeroActions>
         </HeroContent>
@@ -534,13 +536,13 @@ const HomePage: React.FC = () => {
 
       <Section>
         <Container>
-          <SectionTitle>Featured Models</SectionTitle>
+          <SectionTitle>{t('home.featuredModels')}</SectionTitle>
           {loading && (
             <LoadingSpinner />
           ) }
           {(!loading && featuredModels.length === 0) ? (
             <EmptyState>
-              No models available yet. Please try again later.
+              {t('home.noModelsAvailable')}
             </EmptyState>
           ) : null}
           <ModelGrid>

@@ -1,5 +1,6 @@
 import type React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { GlobalStyles } from './styles/GlobalStyles';
@@ -23,6 +24,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // Main App Routes
 const AppRoutes: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <Layout>
       <Routes>
@@ -50,16 +53,16 @@ const AppRoutes: React.FC = () => {
         } />
         <Route path="/collections/:collection" element={<ModelsPage />} />
         <Route path="/docs" element={<div style={{ padding: '2rem', textAlign: 'center' }}>
-          <h1>Documentation</h1>
-          <p>API documentation coming soon...</p>
+          <h1>{t('navigation.docs')}</h1>
+          <p>{t('errors.documentationComingSoon')}</p>
         </div>} />
         <Route path="/creators" element={<div style={{ padding: '2rem', textAlign: 'center' }}>
-          <h1>Creators</h1>
-          <p>Creator resources coming soon...</p>
+          <h1>{t('navigation.creators')}</h1>
+          <p>{t('errors.creatorsComingSoon')}</p>
         </div>} />
         <Route path="*" element={<div style={{ padding: '2rem', textAlign: 'center' }}>
-          <h1>404 - Page Not Found</h1>
-          <p>The page you're looking for doesn't exist.</p>
+          <h1>{t('errors.pageNotFound')}</h1>
+          <p>{t('errors.pageNotFoundDescription')}</p>
         </div>} />
       </Routes>
     </Layout>

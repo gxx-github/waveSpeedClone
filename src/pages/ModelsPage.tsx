@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../styles/GlobalStyles';
 import { CustomSelect } from '../components/Select';
 import ModelCard from '../components/ModelCard';
@@ -301,6 +302,7 @@ type TypeFilter = 'all' | 'video' | 'image' | 'audio';
 type ProviderFilter = 'all' | 'minimax' | 'bytedance' | 'kwaivgi' | 'wavespeed-ai';
 
 const ModelsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
@@ -503,7 +505,7 @@ const ModelsPage: React.FC = () => {
               </SearchIcon>
               <SearchInput
                 type="text"
-                placeholder="Search models..."
+                placeholder={t('models.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -515,7 +517,7 @@ const ModelsPage: React.FC = () => {
           <Sidebar>
             <SidebarTitle>
               <Filter size={20} />
-              Filters
+              {t('models.filters')}
             </SidebarTitle>
             
             <FilterGroup>
@@ -543,7 +545,7 @@ const ModelsPage: React.FC = () => {
               variant="secondary"
             >
               <X size={16} />
-              Clear All Filters
+              {t('models.clearAllFilters')}
             </ClearFiltersButton>
           </Sidebar>
 
@@ -551,7 +553,7 @@ const ModelsPage: React.FC = () => {
             <ModelsHeader>
               <div>
                 <ModelsTitle>
-                  All Models
+                  {t('models.title')}
                   <ModelsCount>({filteredAndSortedModels.length} models)</ModelsCount>
                 </ModelsTitle>
               </div>
@@ -560,11 +562,11 @@ const ModelsPage: React.FC = () => {
                   value={sortBy}
                   onChange={(v) => setSortBy(v as SortOption)}
                   options={[
-                    { value: 'popular', label: 'Most Popular' },
-                    { value: 'newest', label: 'Newest' },
-                    { value: 'name', label: 'Name A-Z' },
-                    { value: 'price-low', label: 'Price: Low to High' },
-                    { value: 'price-high', label: 'Price: High to Low' },
+                    { value: 'popular', label: t('models.mostPopular') },
+                    { value: 'newest', label: t('models.newest') },
+                    { value: 'name', label: t('models.nameAZ') },
+                    { value: 'price-low', label: t('models.priceLowToHigh') },
+                    { value: 'price-high', label: t('models.priceHighToLow') },
                   ]}
                 />
               </SortSelect>
@@ -573,7 +575,7 @@ const ModelsPage: React.FC = () => {
           
 
             {isSearching ? (
-              <LoadingState message="Searching models..." />
+              <LoadingState message={t('models.searching')} />
             ) : displayedModels.length > 0 ? (
               <>
                 <ModelsGrid>
@@ -595,7 +597,7 @@ const ModelsPage: React.FC = () => {
 
                 {hasMore && (
                   <LoadMoreButton onClick={loadMore} variant="secondary">
-                    Load More Models ({filteredAndSortedModels.length - displayCount} remaining)
+                    {t('models.loadMore')} ({filteredAndSortedModels.length - displayCount} {t('models.remaining')})
                   </LoadMoreButton>
                 )}
               </>
@@ -604,9 +606,9 @@ const ModelsPage: React.FC = () => {
                 <NoResultsIcon>
                   <Search size={48} />
                 </NoResultsIcon>
-                <NoResultsTitle>No models found</NoResultsTitle>
+                <NoResultsTitle>{t('models.noModelsFound')}</NoResultsTitle>
                 <NoResultsText>
-                  Try adjusting your search criteria or filters to find what you're looking for.
+                  {t('models.noResultsDescription')}
                 </NoResultsText>
                 <Button
                   onClick={clearAllFilters}
@@ -614,7 +616,7 @@ const ModelsPage: React.FC = () => {
                   style={{ margin:'0 auto' }}
                 >
                   <X size={16} />
-                  Clear All Filters
+                  {t('models.clearAllFilters')}
                 </Button>
               </NoResults>
             )}

@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { Card, Button, Input } from '../styles/GlobalStyles';
 import { CustomSelect } from '../components/Select';
 import { useAuth } from '../contexts/AuthContext';
@@ -262,6 +263,7 @@ const formatBillDate = (input: string): string => {
 };
 
 const BillingPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user, fetchUserInfo, isAuthenticated } = useAuth();
   const [balance, setBalance] = useState<number>(0);
   const [tab, setTab] = useState<'topup' | 'billing'>('topup');
@@ -327,7 +329,7 @@ const BillingPage: React.FC = () => {
   return (
     <PageContainer>
       <Container>
-        <Title>Billing</Title>
+        <Title>{t('billing.title')}</Title>
         <Grid>
           <div>
             <SectionTitleRow>
@@ -336,23 +338,23 @@ const BillingPage: React.FC = () => {
             </SectionTitleRow>
 
             <SectionCard>
-              <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>Amount</p>
+              <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>{t('billing.amount')}</p>
               <AmountGrid>
                 <AmountCard $active={amount==='10'} onClick={() => setAmount('10')}>
                   <div className="price">$10</div>
-                  <div className="note">Generate over <b>100</b> videos or <b>2,000</b> images.</div>
+                  <div className="note">{t('billing.generateOver')} <b>100</b> {t('billing.videos')} or <b>2,000</b> {t('billing.images')}.</div>
                 </AmountCard>
                 <AmountCard $active={amount==='50'} onClick={() => setAmount('50')}>
                   <div className="price">$50</div>
-                  <div className="note">Generate over <b>500</b> videos or <b>10,000</b> images.</div>
+                  <div className="note">{t('billing.generateOver')} <b>500</b> {t('billing.videos')} or <b>10,000</b> {t('billing.images')}.</div>
                 </AmountCard>
                 <AmountCard $active={amount==='100'} onClick={() => setAmount('100')}>
                   <div className="price">$100</div>
-                  <div className="note">Generate over <b>1,000</b> videos or <b>20,000</b> images.</div>
+                  <div className="note">{t('billing.generateOver')} <b>1,000</b> {t('billing.videos')} or <b>20,000</b> {t('billing.images')}.</div>
                 </AmountCard>
                 <AmountCard $active={amount==='custom'} onClick={() => setAmount('custom')}>
-                  <div className="price">Custom</div>
-                  <div className="note">Minimum <b>$2</b><span> </span><b>$1</b> increments</div>
+                  <div className="price">{t('billing.custom')}</div>
+                  <div className="note">{t('billing.minimum')} <b>$2</b><span> </span><b>$1</b> {t('billing.increments')}</div>
                 </AmountCard>
               </AmountGrid>
 
@@ -362,13 +364,13 @@ const BillingPage: React.FC = () => {
                 </div>
               )}
 
-              <p style={{ marginTop: '1rem', fontWeight: 600 }}>Payment Method</p>
+              <p style={{ marginTop: '1rem', fontWeight: 600 }}>{t('billing.paymentMethod')}</p>
               <PaymentRow>
                 {/* <Radio $active={payment==='paypal'} onClick={() => setPayment('paypal')}>
-                  <input type="radio" checked={payment==='paypal'} readOnly /> PayPal
+                  <input type="radio" checked={payment==='paypal'} readOnly /> {t('billing.paypal')}
                 </Radio> */}
                 <Radio $active={payment==='stripe'} onClick={() => setPayment('stripe')}>
-                  <input type="radio" checked={payment==='stripe'} readOnly /> stripe
+                  <input type="radio" checked={payment==='stripe'} readOnly /> {t('billing.stripe')}
                 </Radio>
                 <div style={{ flex: 1 }} />
                 <Button variant="primary" onClick={async () => {
@@ -412,7 +414,7 @@ const BillingPage: React.FC = () => {
 
             <Inline style={{ marginTop: '1rem' }}>
               <Tabs>
-                <Tab $active={tab==='topup'} onClick={() => setTab('topup')}>Top up</Tab>
+                <Tab $active={tab==='topup'} onClick={() => setTab('topup')}>{t('billing.topUp')}</Tab>
                 {/* <Tab $active={tab==='billing'} onClick={() => setTab('billing')}>Billing</Tab> */}
               </Tabs>
               {/* <Button variant="secondary" size="sm">Add Billing Address</Button> */}
@@ -420,13 +422,13 @@ const BillingPage: React.FC = () => {
 
             <Table>
               <TableHeader>
-                <div>Date</div>
-                <div>Amount</div>
-                <div>Status</div>
+                <div>{t('billing.date')}</div>
+                <div>{t('billing.amount')}</div>
+                <div>{t('billing.status')}</div>
               </TableHeader>
               {billsLoading ? (
                 <div style={{ padding: '1rem', textAlign: 'center' }}>
-                  <InlineLoader>Loading records…</InlineLoader>
+                  <InlineLoader>{t('billing.loadingRecords')}</InlineLoader>
                 </div>
               ) : history.length === 0 ? (
                 <Empty>No top up records yet</Empty>
@@ -470,7 +472,7 @@ const BillingPage: React.FC = () => {
             <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{user?.name || user?.email || 'User'}</div>
             {/* <Small>{user?.email || 'user@example.com'}</Small> */}
             <Balance style={{ marginTop: '1rem' }}>${balance.toFixed(2)}</Balance>
-            <Small>Account Balance</Small>
+            <Small>{t('billing.balance')}</Small>
             <Small>The balance never expires.</Small>
           </AccountCard>
         </Grid>

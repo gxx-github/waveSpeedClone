@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, Input, Textarea } from '../styles/GlobalStyles';
 import { api } from '../api/client';
@@ -362,6 +363,7 @@ const ReadmeContent = styled.div`
 `;
 
 const ModelDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { provider, model: modelName, subtype } = useParams<{ provider: string; model: string; subtype?: string }>();
   console.log('modelName', modelName);
   console.log('provider', provider);
@@ -441,11 +443,11 @@ const ModelDetailPage: React.FC = () => {
   })() : undefined;
 
   const generationSteps = [
-    'Analyzing prompt...',
-    'Initializing model...',
-    'Processing generation...',
-    'Optimizing output...',
-    'Finalizing result...'
+    t('modelDetail.analyzingPrompt'),
+    t('modelDetail.initializingModel'),
+    t('modelDetail.processingGeneration'),
+    t('modelDetail.optimizingOutput'),
+    t('modelDetail.finalizingResult')
   ];
 
   const mockResults = [
@@ -555,10 +557,10 @@ const ModelDetailPage: React.FC = () => {
     return (
       <ModelDetailContainer>
         <Container>
-          <h1>Model not found</h1>
-          <p>The requested model could not be found.</p>
+          <h1>{t('modelDetail.modelNotFound')}</h1>
+          <p>{t('modelDetail.modelNotFound')}</p>
           <Button as={Link} to="/models" variant="primary">
-            Back to Models
+            {t('modelDetail.backToModels')}
           </Button>
         </Container>
       </ModelDetailContainer>
@@ -567,7 +569,7 @@ const ModelDetailPage: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!isAuthenticated) {
-      showToast('请先登录后再运行模型', { type: 'error' });
+      showToast(t('modelDetail.pleaseLogin'), { type: 'error' });
       navigate('/login');
       return;
     }
@@ -613,7 +615,7 @@ const ModelDetailPage: React.FC = () => {
         const errorDetail = res.detail.toLowerCase();
         if (errorDetail.includes('timeout') || errorDetail.includes('timed out')) {
           setStatus('error');
-          showToast('生成超时，请重试', { type: 'error' });
+          showToast(t('modelDetail.generationFailed'), { type: 'error' });
           return;
         }
       }
@@ -639,12 +641,12 @@ const ModelDetailPage: React.FC = () => {
               if (typeof possibleUrl === 'string' && possibleUrl) {
                 setGeneratedResult(possibleUrl);
                 setStatus('completed');
-                showToast('生成成功！', { type: 'success' });
+                showToast(t('modelDetail.generationSuccess'), { type: 'success' });
                 return;
               } else {
                 // 即使状态是 completed 但没有 URL，也认为生成失败
                 setStatus('error');
-                showToast('生成完成但未获取到结果，请重试', { type: 'error' });
+                showToast(t('modelDetail.generationFailed'), { type: 'error' });
                 return;
               }
             }
@@ -653,13 +655,13 @@ const ModelDetailPage: React.FC = () => {
             if (typeof possibleUrl === 'string' && possibleUrl && statusText !== 'processing') {
               setGeneratedResult(possibleUrl);
               setStatus('completed');
-              showToast('生成成功！', { type: 'success' });
+              showToast(t('modelDetail.generationSuccess'), { type: 'success' });
               return;
             }
 
             if (statusText === 'failed' || statusText === 'error') {
               setStatus('error');
-              showToast('生成失败，请重试', { type: 'error' });
+              showToast(t('modelDetail.generationFailed'), { type: 'error' });
               return;
             }
 
@@ -689,7 +691,7 @@ const ModelDetailPage: React.FC = () => {
       if(res.error || res.code ===400){
         setStatus('error');
 
-        let errorMessage = '生成失败，请重试';
+        let errorMessage = t('modelDetail.generationFailed');
         try {
           const raw = String(res.error || '');
           const jsonMatch = raw.match(/\{[\s\S]*\}$/);
@@ -709,7 +711,7 @@ const ModelDetailPage: React.FC = () => {
       if (typeof possibleUrl === 'string' && possibleUrl) {
         setGeneratedResult(possibleUrl);
         setStatus('completed');
-        showToast('生成成功！', { type: 'success' });
+        showToast(t('modelDetail.generationSuccess'), { type: 'success' });
       } else {
         // 无 uuid 且无直链，视为异常
         console.log('Order submitted, but no uuid and no direct result returned');
@@ -719,7 +721,7 @@ const ModelDetailPage: React.FC = () => {
       console.error('Create order failed:', err);
       setStatus('error');
 
-      let errorMessage = '生成失败，请重试';
+      let errorMessage = t('modelDetail.generationFailed');
       try {
         const raw = String(err?.response?.data || err?.message || err?.error || '');
         const jsonMatch = raw.match(/\{[\s\S]*\}$/);
@@ -905,10 +907,10 @@ const ModelDetailPage: React.FC = () => {
         return (
           <>
             <div style={{ width: '100%' }}>
-              <PreviewText>Generating {model.type}...</PreviewText>
+              <PreviewText>{t('modelDetail.generating')} {model.type}...</PreviewText>
               <ProgressBar progress={progress} />
               <div style={{ marginBottom: '1rem' }}>
-                {Math.round(progress)}% complete • ~{Math.max(0, estimatedTime - (progress / 100 * estimatedTime)).toFixed(0)}s remaining
+                {Math.round(progress)}% {t('common.complete')} • ~{Math.max(0, estimatedTime - (progress / 100 * estimatedTime)).toFixed(0)}{t('modelDetail.seconds')} {t('common.remaining')}
               </div>
               <GenerationSteps>
                 {generationSteps.map((step, index) => (
@@ -997,7 +999,7 @@ const ModelDetailPage: React.FC = () => {
             )}
             <StatusIndicator $status="completed">
               <span>●</span>
-              Generation completed successfully!
+              {t('modelDetail.generationSuccess')}
             </StatusIndicator>
             {generatedResult && (
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -1007,7 +1009,7 @@ const ModelDetailPage: React.FC = () => {
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
                   <Download size={16} />
-                  Download Result
+                  {t('modelDetail.downloadResult')}
                 </Button>
                 {/* <Button 
                   onClick={() => navigator.clipboard.writeText(generatedResult)} 
@@ -1015,7 +1017,7 @@ const ModelDetailPage: React.FC = () => {
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
                   <Clipboard size={16} />
-                  Copy URL
+                  {t('modelDetail.copyUrl')}
                 </Button> */}
               </div>
             )}
@@ -1091,19 +1093,19 @@ const ModelDetailPage: React.FC = () => {
                   $active={activeTab === 'playground'}
                   onClick={() => setActiveTab('playground')}
                 >
-                  Playground
+                  {t('modelDetail.playground')}
                 </PlaygroundTab>
                 <PlaygroundTab
                   $active={activeTab === 'json'}
                   onClick={() => setActiveTab('json')}
                 >
-                  JSON
+                  {t('modelDetail.json')}
                 </PlaygroundTab>
                 <PlaygroundTab
                   $active={activeTab === 'api'}
                   onClick={() => setActiveTab('api')}
                 >
-                  API
+                  {t('modelDetail.api')}
                 </PlaygroundTab>
               </PlaygroundHeader>
 
@@ -1133,7 +1135,7 @@ const ModelDetailPage: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
                         <Settings size={24} />
                       </div>
-                      <p>No parameters available for this model</p>
+                      <p>{t('modelDetail.noParametersAvailable')}</p>
                     </div>
                   )}
 
@@ -1153,7 +1155,7 @@ const ModelDetailPage: React.FC = () => {
                       style={{ flex: 1 }}
                       disabled={status === 'processing'}
                     >
-                      Reset
+                      {t('modelDetail.reset')}
                     </Button>
                     <Button
                       onClick={handleGenerate}
@@ -1164,15 +1166,15 @@ const ModelDetailPage: React.FC = () => {
                       {status === 'processing' ? (
                         <>
                           <SpinningIcon size={16} />
-                          Generating...
+                          {t('modelDetail.generating')}
                            {/* {Math.round(progress)}% */}
                         </>
                       ) : status === 'completed' ? (
-                        'Run Again'
+                        t('modelDetail.generate')
                       ) : status === 'error' ? (
-                        'Retry'
+                        t('modelDetail.generate')
                       ) : (
-                        `Run $${model?.price || 0}`
+                        `${t('modelDetail.generate')} $${model?.price || 0}`
                       )}
                     </Button>
                   </div>

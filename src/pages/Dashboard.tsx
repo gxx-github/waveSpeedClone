@@ -4,6 +4,7 @@ import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, Input } from '../styles/GlobalStyles';
 import { CustomSelect } from '../components/Select';
@@ -647,6 +648,7 @@ const DateRangeInput = styled(Input)`
 `;
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   // Usage date range (default last 7 days)
@@ -874,7 +876,7 @@ const Dashboard: React.FC = () => {
     return (
       <DashboardContainer>
         <Container>
-          <LoadingState message="Loading your dashboard..." />
+          <LoadingState message={t('common.loading')} />
         </Container>
       </DashboardContainer>
     );
@@ -887,8 +889,8 @@ const Dashboard: React.FC = () => {
         <UsageSection>
           <UsageHeader>
             <div>
-              <UsageTitle>Usage</UsageTitle>
-              <UsageSubtitle>See usage statistics per model</UsageSubtitle>
+              <UsageTitle>{t('dashboard.usage')}</UsageTitle>
+              <UsageSubtitle>{t('dashboard.usageSubtitle')}</UsageSubtitle>
             </div>
             <div style={{ position: 'relative' }}>
               <UsageDateRangeContainer onClick={() => setShowRangePicker(v => !v)}>

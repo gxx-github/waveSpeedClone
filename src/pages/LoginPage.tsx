@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -159,6 +160,7 @@ const Disclaimer = styled.p`
 `;
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const { login, loginWithGoogle, loginWithGitHub, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
@@ -178,7 +180,7 @@ const LoginPage: React.FC = () => {
       await loginWithGoogle();
     } catch (error) {
       console.error('Google login failed:', error);
-      setError('Google登录失败，请重试');
+      setError(t('auth.googleLoginFailed'));
     }
   };
 
@@ -187,7 +189,7 @@ const LoginPage: React.FC = () => {
       await loginWithGitHub();
     } catch (error) {
       console.error('GitHub login failed:', error);
-      setError('GitHub登录失败，请重试');
+      setError(t('auth.githubLoginFailed'));
     }
   };
 
@@ -196,8 +198,8 @@ const LoginPage: React.FC = () => {
   return (
     <Page>
       <Card>
-        <Title>欢迎登录</Title>
-        <Subtitle>选择登录方式继续到仪表板</Subtitle>
+        <Title>{t('auth.welcome')}</Title>
+        <Subtitle>{t('auth.loginSubtitle')}</Subtitle>
 
         {/* OAuth 登录按钮 */}
         <Button $variant="google" onClick={handleGoogleLogin} disabled={isLoading}>
@@ -207,7 +209,7 @@ const LoginPage: React.FC = () => {
             <path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="white" d="M12 5.38c1.62 0 3.0/6.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          {isLoading ? '登录中...' : '使用 Google 登录'}
+          {isLoading ? t('auth.loggingIn') : t('auth.loginWithGoogle')}
         </Button>
 
         {/* <Button $variant="github" onClick={handleGitHubLogin} disabled={isLoading}>
@@ -218,7 +220,7 @@ const LoginPage: React.FC = () => {
         </Button> */}
 
         <Disclaimer>
-          登录即表示您同意我们的 <a href="/terms">服务条款</a> 和 <a href="/privacy">隐私政策</a>。
+          <span dangerouslySetInnerHTML={{ __html: t('auth.termsAndPrivacy') }} />
         </Disclaimer>
       </Card>
     </Page>

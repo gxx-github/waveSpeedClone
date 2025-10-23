@@ -2,6 +2,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 
@@ -59,6 +60,7 @@ const ErrorMessage = styled.div`
 `;
 
 const OAuthCallback: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { setUser, setAccessToken } = useAuth();
@@ -81,14 +83,14 @@ const OAuthCallback: React.FC = () => {
 
         if (error) {
           console.error('OAuth error from Google:', error);
-          setErrorMessage(`OAuth错误: ${error}`);
+          setErrorMessage(`${t('oauth.oauthError')}: ${error}`);
           setStatus('error');
           return;
         }
 
         if (!code) {
           console.error('No authorization code received');
-          setErrorMessage('未收到授权码，请重试');
+          setErrorMessage(t('oauth.noAuthCode'));
           setStatus('error');
           return;
         }
@@ -147,23 +149,23 @@ const OAuthCallback: React.FC = () => {
           }, 800);
         } else {
           console.error('Invalid response from backend:', response);
-          throw new Error('后端返回的响应格式不正确');
+          throw new Error(t('oauth.invalidResponse'));
         }
       } catch (error) {
         console.error('OAuth callback error:', error);
         
-        let errorMsg = '认证失败';
+        let errorMsg = t('oauth.loginFailed');
         if (error instanceof Error) {
           if (error.message.includes('Failed to fetch')) {
-            errorMsg = '无法连接到服务器，请检查网络连接';
+            errorMsg = t('oauth.networkError');
           } else if (error.message.includes('HTTP 404')) {
-            errorMsg = '后端API端点不存在，请检查服务器配置';
+            errorMsg = t('oauth.invalidResponse');
           } else if (error.message.includes('HTTP 500')) {
-            errorMsg = '服务器内部错误，请稍后重试';
+            errorMsg = t('oauth.unknownError');
           } else if (error.message.includes('HTTP 401')) {
-            errorMsg = '认证失败，授权码可能已过期';
+            errorMsg = t('oauth.loginFailed');
           } else {
-            errorMsg = error.message;
+            errorMsg = error.message || t('oauth.unknownError');
           }
         }
         
@@ -180,8 +182,8 @@ const OAuthCallback: React.FC = () => {
       <Page>
         <Card>
           <Spinner />
-          <Title>正在验证...</Title>
-          <Message>请稍候，我们正在处理您的登录信息</Message>
+          <Title>{t('oauth.redirecting')}</Title>
+          <Message>{t('oauth.pleaseWait')}</Message>
         </Card>
       </Page>
     );
@@ -191,7 +193,7 @@ const OAuthCallback: React.FC = () => {
     return (
       <Page>
         <Card>
-          <Title>登录失败</Title>
+          <Title>{t('oauth.loginFailed')}</Title>
           <ErrorMessage>{errorMessage}</ErrorMessage>
           <button 
             onClick={() => navigate('/login')}
@@ -204,7 +206,7 @@ const OAuthCallback: React.FC = () => {
               cursor: 'pointer'
             }}
           >
-            返回登录页面
+            {t('oauth.tryAgain')}
           </button>
         </Card>
       </Page>
@@ -214,8 +216,8 @@ const OAuthCallback: React.FC = () => {
   return (
     <Page>
       <Card>
-        <Title>登录成功！</Title>
-        <Message>正在跳转到仪表板...</Message>
+        <Title>{t('oauth.loginSuccess')}</Title>
+        <Message>{t('oauth.redirecting')}</Message>
         <Spinner />
       </Card>
     </Page>

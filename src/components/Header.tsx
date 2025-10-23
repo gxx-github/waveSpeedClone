@@ -2,10 +2,12 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, Input } from '../styles/GlobalStyles';
 import LoginModal from './LoginModal';
+import LanguageSwitcher from './LanguageSwitcher';
 import { Search, Moon, Sun, User, LogOut, Settings, CreditCard, Key, BarChart3 } from 'lucide-react';
 
 const HeaderContainer = styled.header<{ $scrolled?: boolean }>`
@@ -246,6 +248,7 @@ const Divider = styled.div`
 `;
 
 const Header: React.FC = () => {
+  const { t } = useTranslation();
   const { theme, toggleTheme, isDark } = useTheme();
   const { user, logout, isAuthenticated, fetchUserInfo } = useAuth();
   const location = useLocation();
@@ -307,19 +310,19 @@ const Header: React.FC = () => {
           <Nav>
             <NavLink to="/dashboard" $active={isActive('/dashboard') || location.pathname.startsWith('/dashboard/')}>
               <BarChart3 size={16} />
-              Dashboard
+              {t('navigation.dashboard')}
             </NavLink>
             <NavLink to="/models" $active={isActive('/models')}>
               <Search size={16} />
-              Explore
+              {t('navigation.explore')}
             </NavLink>
             <NavLink to="/api-keys" $active={isActive('/api-keys')}>
               <Key size={16} />
-              API Keys
+              {t('navigation.apiKeys')}
             </NavLink>
             <NavLink to="/billing" $active={isActive('/billing')}>
               <CreditCard size={16} />
-              Billing
+              {t('navigation.billing')}
             </NavLink>
             {/* <a href="/docs/docs" target="_blank" rel="noopener noreferrer" style={{
               padding: '0.5rem 1rem',
@@ -333,6 +336,7 @@ const Header: React.FC = () => {
           </Nav>
 
           <RightSection>
+            <LanguageSwitcher />
             <ThemeToggle onClick={toggleTheme}>
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </ThemeToggle>
@@ -355,11 +359,11 @@ const Header: React.FC = () => {
                     <MenuList>
                       <MenuItem to="/billing">
                         <CreditCard size={16} />
-                        Billing
+                        {t('navigation.billing')}
                       </MenuItem>
                       <MenuItem to="/api-keys">
                         <Key size={16} />
-                        API Keys
+                        {t('navigation.apiKeys')}
                       </MenuItem>
                       {/* <MenuButton onClick={() => setOpen(false)}>Create Team</MenuButton>
                       <MenuButton onClick={() => setOpen(false)}>My Inspiration</MenuButton>
@@ -374,7 +378,7 @@ const Header: React.FC = () => {
                       <Divider />
                       <MenuButton onClick={() => { setOpen(false); logout(); }}>
                         <LogOut size={16} />
-                        Sign out
+                        {t('navigation.signOut')}
                       </MenuButton>
                     </MenuList>
                   </Dropdown>
@@ -384,7 +388,7 @@ const Header: React.FC = () => {
               <Link to="/login">
                 <Button variant="primary" size="sm">
                   <User size={16} />
-                  Sign In
+                  {t('navigation.signIn')}
                 </Button>
               </Link>
             )}

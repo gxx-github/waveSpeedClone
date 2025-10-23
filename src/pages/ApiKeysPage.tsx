@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { Card, Button, Input } from '../styles/GlobalStyles';
 import { useToast } from '../components/Toast';
 import { api } from '../api/client';
@@ -107,6 +108,7 @@ const Empty = styled.div`
 `;
 
 const ApiKeysPage: React.FC = () => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [keys, setKeys] = useState<Array<{ id: string; name: string; keyMasked?: string; key?: string; created: string; status: 'active' | 'revoked' }>>([]);
@@ -137,7 +139,7 @@ const ApiKeysPage: React.FC = () => {
       const created = await api.createApiKey(name);
       await loadKeys();
       if (created?.keyPlain) {
-        showToast('Key created. Copy now from the list.', { type: 'success' });
+        showToast(t('apiKeys.keyCreated'), { type: 'success' });
       }
     } catch (e) {
       console.error(e);
@@ -169,25 +171,25 @@ const ApiKeysPage: React.FC = () => {
   return (
     <PageContainer>
       <Container>
-        <Title>API Keys</Title>
+        <Title>{t('apiKeys.title')}</Title>
         <TopBar>
-          <NameInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Key name" />
-          <Button variant="primary" onClick={handleCreate}>Create Key</Button>
+          <NameInput value={name} onChange={(e) => setName(e.target.value)} placeholder={t('apiKeys.keyName')} />
+          <Button variant="primary" onClick={handleCreate}>{t('apiKeys.createKey')}</Button>
         </TopBar>
 
         <Table>
           <TableScroll>
             <TableHeader>
-              <div>Name</div>
-              <div>Key</div>
-              <div>Status</div>
-              <div>Actions</div>
+              <div>{t('apiKeys.name')}</div>
+              <div>{t('apiKeys.key')}</div>
+              <div>{t('apiKeys.status')}</div>
+              <div>{t('apiKeys.actions')}</div>
             </TableHeader>
 
             {isLoading ? (
-              <Empty>Loading...</Empty>
+              <Empty>{t('apiKeys.loading')}</Empty>
             ) : keys.length === 0 ? (
-              <Empty>No access keys found. Create one to get started.</Empty>
+              <Empty>{t('apiKeys.noKeysFound')}</Empty>
             ) : (
               keys.map((k) => {
                 const isShown = !!visible[k.id];
@@ -215,7 +217,7 @@ const ApiKeysPage: React.FC = () => {
                     <Cell>{k.status}</Cell>
                     <Cell>
                       <Button size="sm" style={{ marginRight: '0.5rem' }} onClick={() => copyKey(k.keyMasked)}>
-                        Copy
+                        {t('apiKeys.copy')}
                       </Button>
                       {/* <Button size="sm" variant="secondary">Revoke</Button> */}
                     </Cell>

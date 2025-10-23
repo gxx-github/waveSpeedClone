@@ -1,6 +1,7 @@
 import type React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BarChart3, Circle } from 'lucide-react';
 
 const FooterContainer = styled.footer`
@@ -136,6 +137,8 @@ const FooterBottom = styled.div`
 `;
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <FooterContainer>
       <FooterContent>
@@ -153,16 +156,16 @@ const Footer: React.FC = () => {
             <StatusDot>
               <Circle size={4} fill="currentColor" />
             </StatusDot>
-            All services are online
+            {t('footer.allServicesOnline')}
           </StatusIndicator>
         </FooterTop>
 
         <FooterMain>
           <FooterSection>
-            <SectionTitle>Navigation</SectionTitle>
-            <FooterLink to="/">Home</FooterLink>
-            <FooterLink to="/models">Explore</FooterLink>
-            <FooterLink to="/api-keys">API Keys</FooterLink>
+            <SectionTitle>{t('footer.navigation')}</SectionTitle>
+            <FooterLink to="/">{t('navigation.home')}</FooterLink>
+            <FooterLink to="/models">{t('navigation.explore')}</FooterLink>
+            <FooterLink to="/api-keys">{t('navigation.apiKeys')}</FooterLink>
           </FooterSection>
 
           <FooterSection>
@@ -175,7 +178,7 @@ const Footer: React.FC = () => {
           </FooterSection>
 
           <FooterSection>
-            <SectionTitle>Contact</SectionTitle>
+            <SectionTitle>{t('footer.contact')}</SectionTitle>
             <ExternalLink href="mailto:support@wavespeed.ai">support@wavespeed.ai</ExternalLink>
           </FooterSection>
 
@@ -190,9 +193,9 @@ const Footer: React.FC = () => {
         </FooterMain>
 
         <FooterBottom>
-          © 2025 WaveSpeedAI. All Rights Reserved.{' '}
-          <Link to="">Terms of Service</Link> and{' '}
-          <Link to="">Privacy Policy</Link>
+          {t('footer.copyright')}{' '}
+          <Link to="">{t('footer.termsOfService')}</Link> and{' '}
+          <Link to="">{t('footer.privacyPolicy')}</Link>
         </FooterBottom>
       </FooterContent>
     </FooterContainer>
