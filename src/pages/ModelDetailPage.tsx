@@ -838,7 +838,7 @@ const ModelDetailPage: React.FC = () => {
             {model?.cover_url ? (
               (() => {
                 const url = model.cover_url.toLowerCase();
-                const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('.mov');
+                const isVideo = url.includes('.mp4') || url.includes('.mp3')  || url.includes('.webm') || url.includes('.ogg') || url.includes('.mov');
                 const isImage = url.includes('.png') || url.includes('.jpg') || url.includes('.jpeg') || url.includes('.gif') || url.includes('.webp') || url.includes('.svg');
                 
                 if (isVideo) {
