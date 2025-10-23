@@ -7,13 +7,16 @@ WORKDIR /app
 COPY package*.json ./
 
 # 安装依赖（包括 devDependencies，用于构建）
-RUN npm install
+# RUN npm install
+RUN corepack enable && yarn install --frozen-lockfile
+
 
 # 复制所有源代码
 COPY . .
 
 # 构建前端项目
-RUN npm run build
+RUN yarn build
+# RUN npm run build
 
 # 生产环境运行镜像（只包含构建后的静态文件）
 FROM nginx:alpine
