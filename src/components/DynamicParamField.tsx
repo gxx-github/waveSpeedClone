@@ -266,7 +266,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
   const { type, tooltip, multiline, min, max, step, display, resolution, aspect_ratio } = paramConfig;
   const [isUploading, setIsUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-
+  console.log('paramConfig for', paramName, paramConfig);
   const handleRandomize = () => {
     if (type === 'INT' || type === 'FLOAT') {
       const minVal = min || 0;
@@ -277,7 +277,40 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
   };
 
   const renderField = () => {
-    // 优先处理 options/select
+    // 优先处理 Range 选项（新的参数格式）
+    if (Array.isArray((paramConfig as any).Range) && (paramConfig as any).Range.length > 0) {
+      // 如果是数字类型且有Range，且display为slider，则使用滑块
+      if ((type === 'FLOAT' || type === 'INT') && display === 'slider' && min !== undefined && max !== undefined) {
+        return (
+          <SliderContainer>
+            <Slider
+              type="range"
+              min={min}
+              max={max}
+              step={step || 1}
+              value={value !== undefined && value !== null ? value : (paramConfig.default !== undefined ? paramConfig.default : min)}
+              onChange={(e) => onChange(Number(e.target.value))}
+              disabled={disabled}
+            />
+            <SliderValue>{value !== undefined && value !== null ? value : (paramConfig.default !== undefined ? paramConfig.default : min)}</SliderValue>
+          </SliderContainer>
+        );
+      }
+      // 否则使用下拉选择框
+      const opts = (paramConfig as any).Range.map((opt: any) => ({ value: String(opt), label: String(opt) }));
+      return (
+        <Select>
+          <CustomSelect
+            value={String(value ?? paramConfig.default ?? (opts[0]?.value || ''))}
+            onChange={(v) => onChange(v)}
+            options={opts}
+            disabled={disabled}
+          />
+        </Select>
+      );
+    }
+
+    // 处理旧的 options/select 格式
     if (Array.isArray(paramConfig.options) && paramConfig.options.length > 0) {
       const opts = paramConfig.options.map((opt) => ({ value: String(opt), label: String(opt) }));
       return (
@@ -293,8 +326,309 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
     }
 
     switch (type) {
+      case 'ARRAY':
+        // 特殊处理图片相关的ARRAY参数
+        if (paramName.toLowerCase() === 'images' || 
+            paramName.toLowerCase() === 'source_image' || 
+            paramName.toLowerCase() === 'target_image') {
+          const images = Array.isArray(value) ? value : [];
+          const handleImageAdd = async (file: File) => {
+            if (!file || isUploading) return;
+            
+            setIsUploading(true);
+            try {
+              const resp: any = await api.uploadFile(file);
+              const url = typeof resp === 'string' ? resp : (resp?.download_url || resp?.url || resp?.data || '');
+              if (url) {
+                onChange([...images, url]);
+              } else {
+                // 回退到本地预览
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = typeof reader.result === 'string' ? reader.result : '';
+                  onChange([...images, result]);
+                };
+                reader.readAsDataURL(file);
+              }
+            } catch (e) {
+              // 失败也回退到本地预览
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = typeof reader.result === 'string' ? reader.result : '';
+                onChange([...images, result]);
+              };
+              reader.readAsDataURL(file);
+            } finally {
+              setIsUploading(false);
+            }
+          };
+          
+          return (
+            <ImageUploadContainer>
+              <InputWithUpload>
+                <Input
+                  type="text"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value.trim()) {
+                      onChange([...images, e.target.value.trim()]);
+                      e.target.value = '';
+                    }
+                  }}
+                  placeholder={`Enter ${paramName} URL or upload files...`}
+                  disabled={disabled}
+                  style={{ flex: 1 }}
+                />
+                <UploadButton $loading={isUploading}>
+                  {isUploading ? (
+                    <SpinningIcon size={18} />
+                  ) : (
+                    <FolderOpen size={18} />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    multiple
+                    style={{ display: 'none' }}
+                    ref={fileInputRef}
+                    onClick={(e) => {
+                      (e.currentTarget as HTMLInputElement).value = '';
+                    }}
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      files.forEach(file => handleImageAdd(file));
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    disabled={disabled || isUploading}
+                  />
+                </UploadButton>
+              </InputWithUpload>
+              {images.length > 0 && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  {images.map((img, index) => (
+                    <PreviewContainer key={index} style={{ marginBottom: '0.5rem' }}>
+                      <Thumb src={img} alt={`preview ${index + 1}`} />
+                      <DeleteButton
+                        onClick={() => onChange(images.filter((_, i) => i !== index))}
+                        title={`Delete ${paramName}`}
+                      >
+                        <Trash2 size={16} />
+                      </DeleteButton>
+                    </PreviewContainer>
+                  ))}
+                </div>
+              )}
+            </ImageUploadContainer>
+          );
+        }
+        
+        // 其他ARRAY类型的处理
+        return (
+          <Input
+            type="text"
+            value={Array.isArray(value) ? value.join(', ') : (value || '')}
+            onChange={(e) => {
+              const items = e.target.value.split(',').map(item => item.trim()).filter(item => item);
+              onChange(items);
+            }}
+            placeholder={`Enter ${paramName} (comma separated)...`}
+            disabled={disabled}
+          />
+        );
+
       case 'STRING':
-        // 对于图片相关的字段，增加本地上传能力（与 URL 文本输入并存）
+        // 特殊处理 image 参数
+        if (paramName.toLowerCase() === 'image') {
+          const src = (value || '').toString();
+          const handleFile = async (file: File) => {
+            if (!file || isUploading) return;
+            
+            setIsUploading(true);
+            try {
+              const resp: any = await api.uploadFile(file);
+              const url = typeof resp === 'string' ? resp : (resp?.download_url || resp?.url || resp?.data || '');
+              if (url) {
+                onChange(String(url));
+              } else {
+                // 回退到本地预览
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = typeof reader.result === 'string' ? reader.result : '';
+                  onChange(result);
+                };
+                reader.readAsDataURL(file);
+              }
+            } catch (e) {
+              // 失败也回退到本地预览
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = typeof reader.result === 'string' ? reader.result : '';
+                onChange(result);
+              };
+              reader.readAsDataURL(file);
+            } finally {
+              setIsUploading(false);
+            }
+          };
+          return (
+            <ImageUploadContainer>
+              <InputWithUpload>
+                <Input
+                  type="text"
+                  value={value || ''}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder="Enter image URL or upload a file..."
+                  disabled={disabled}
+                  style={{ flex: 1 }}
+                />
+                <UploadButton $loading={isUploading}>
+                  {isUploading ? (
+                    <SpinningIcon size={18} />
+                  ) : (
+                    <FolderOpen size={18} />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    style={{ display: 'none' }}
+                    ref={fileInputRef}
+                    onClick={(e) => {
+                      (e.currentTarget as HTMLInputElement).value = '';
+                    }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFile(file);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    disabled={disabled || isUploading}
+                  />
+                </UploadButton>
+              </InputWithUpload>
+              {src && (src.startsWith('http') || src.startsWith('data:')) && (
+                <PreviewContainer>
+                  <Thumb src={src} alt="preview" />
+                  <DeleteButton
+                    onClick={() => onChange('')}
+                    title="Delete image"
+                  >
+                    <Trash2 size={16} />
+                  </DeleteButton>
+                </PreviewContainer>
+              )}
+            </ImageUploadContainer>
+          );
+        }
+
+        // 特殊处理 audio 参数
+        if (paramName.toLowerCase() === 'audio') {
+          const src = (value || paramConfig.default || '').toString();
+          const isAudioUrl = (url: string) => {
+            return /\.(mp4|mp3|wav|mpeg|wave)$/i.test(url) || 
+                   url.includes('audio') || 
+                   url.includes('sound') ||
+                   url.includes('music');
+          };
+          
+          // 如果当前没有值但有默认值，且默认值看起来像音频文件，则使用默认值
+          if (!value && paramConfig.default && isAudioUrl(String(paramConfig.default))) {
+            onChange(String(paramConfig.default));
+          }
+          
+          const handleFile = async (file: File) => {
+            if (!file || isUploading) return;
+            
+            setIsUploading(true);
+            try {
+              const resp: any = await api.uploadFile(file);
+              const url = typeof resp === 'string' ? resp : (resp?.download_url || resp?.url || resp?.data || '');
+              if (url) {
+                onChange(String(url));
+              } else {
+                // 回退到本地预览
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = typeof reader.result === 'string' ? reader.result : '';
+                  onChange(result);
+                };
+                reader.readAsDataURL(file);
+              }
+            } catch (e) {
+              // 失败也回退到本地预览
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = typeof reader.result === 'string' ? reader.result : '';
+                onChange(result);
+              };
+              reader.readAsDataURL(file);
+            } finally {
+              setIsUploading(false);
+            }
+          };
+          return (
+            <ImageUploadContainer>
+              <InputWithUpload>
+                <Input
+                  type="text"
+                  value={value || ''}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder={paramConfig.default && isAudioUrl(String(paramConfig.default)) 
+                    ? `Default: ${String(paramConfig.default).substring(0, 30)}...` 
+                    : "Enter audio URL or upload a file..."}
+                  disabled={disabled}
+                  style={{ flex: 1 }}
+                />
+                <UploadButton $loading={isUploading}>
+                  {isUploading ? (
+                    <SpinningIcon size={18} />
+                  ) : (
+                    <FolderOpen size={18} />
+                  )}
+                  <input
+                    type="file"
+                    accept="audio/wav,audio/mp3,audio/wave,audio/mpeg"
+                    style={{ display: 'none' }}
+                    ref={fileInputRef}
+                    onClick={(e) => {
+                      (e.currentTarget as HTMLInputElement).value = '';
+                    }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFile(file);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    disabled={disabled || isUploading}
+                  />
+                </UploadButton>
+              </InputWithUpload>
+              {src && (src.startsWith('http') || src.startsWith('data:') || isAudioUrl(src)) && (
+                <PreviewContainer>
+                  <div style={{ 
+                    width: '80px', 
+                    height: '80px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    background: '#f3f4f6',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb',
+                    fontSize: '12px',
+                    color: '#6b7280'
+                  }}>
+                    Audio File
+                  </div>
+                  <DeleteButton
+                    onClick={() => onChange('')}
+                    title="Delete audio"
+                  >
+                    <Trash2 size={16} />
+                  </DeleteButton>
+                </PreviewContainer>
+              )}
+            </ImageUploadContainer>
+          );
+        }
+
+        // 对于其他图片相关的字段，增加本地上传能力（与 URL 文本输入并存）
         {
           const isImageLike = /(^image(s)?$|img|photo|input_image|images?)/i.test(paramName);
           if (!multiline && isImageLike) {
@@ -380,8 +714,8 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
             );
           }
         }
-        // 对于 prompt 字段，强制使用 textarea
-        if (multiline || paramName.toLowerCase() === 'prompt') {
+        // 对于 prompt 和 text 字段，使用 textarea
+        if (paramName.toLowerCase() === 'prompt' || paramName.toLowerCase() === 'text') {
           return (
             <Textarea
               value={value || ''}
@@ -392,6 +726,7 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
             />
           );
         }
+        // 其他STRING类型使用输入框
         return (
           <Input
             type="text"
@@ -404,6 +739,41 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
 
       case 'INT':
       case 'FLOAT':
+        // 特殊处理 seed 参数
+        if (paramName.toLowerCase() === 'seed') {
+          const handleSeedRandomize = () => {
+            // seed 参数的特殊随机化：在 -1 到 2147483647 范围内随机生成
+            const randomSeed = Math.floor(Math.random() * (2147483647 - (-1) + 1)) + (-1);
+            onChange(randomSeed);
+          };
+          
+          return (
+            <InputContainer>
+              <NumberInput
+                type="number"
+                min={-1}
+                max={2147483647}
+                step={1}
+                value={value === -1 ? '-1' : (value || '-1')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onChange(val === '' ? -1 : Number(val));
+                }}
+                placeholder="Enter seed (-1 for random)"
+                disabled={disabled}
+              />
+              <RandomizeButton
+                type="button"
+                onClick={handleSeedRandomize}
+                disabled={disabled}
+                title="Generate random seed (-1 to 2147483647)"
+              >
+                <RotateCcw size={16} />
+              </RandomizeButton>
+            </InputContainer>
+          );
+        }
+
         if (display === 'slider' && min !== undefined && max !== undefined) {
           return (
             <SliderContainer>
@@ -412,11 +782,11 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
                 min={min}
                 max={max}
                 step={step || 1}
-                value={value || paramConfig.default}
+                value={value !== undefined && value !== null ? value : (paramConfig.default !== undefined ? paramConfig.default : min)}
                 onChange={(e) => onChange(Number(e.target.value))}
                 disabled={disabled}
               />
-              <SliderValue>{value || paramConfig.default}</SliderValue>
+              <SliderValue>{value !== undefined && value !== null ? value : (paramConfig.default !== undefined ? paramConfig.default : min)}</SliderValue>
             </SliderContainer>
           );
         }

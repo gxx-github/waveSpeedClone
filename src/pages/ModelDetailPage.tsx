@@ -400,7 +400,22 @@ const ModelDetailPage: React.FC = () => {
             return name === routeFullName;
           });
           console.log('match', match);
-          if (match) setFetchedApiModel(match);
+          if (match) {
+            setFetchedApiModel(match);
+            // 如果匹配的模型有playground结果，更新参数值
+            if (match.playground) {
+              const playgroundDefaults = match.playground || {};
+              setParamValues(prevValues => {
+                const newValues = { ...prevValues };
+                Object.entries(playgroundDefaults).forEach(([key, value]) => {
+                  if (value !== undefined && value !== null) {
+                    newValues[key] = value;
+                  }
+                });
+                return newValues;
+              });
+            }
+          }
         } catch (e) {
           console.error('Failed to fetch model from /api/model:', e);
         } finally {
@@ -480,21 +495,39 @@ const ModelDetailPage: React.FC = () => {
     if (effectiveApiModel?.params) {
       const transformed: ModelParams = {};
       Object.entries(effectiveApiModel.params).forEach(([key, p]: any) => {
+        console.log('p', p);
         const backendType = String(p.type || '').toLowerCase();
-        const mapType = backendType === 'integer' ? 'INT' : backendType === 'number' ? 'FLOAT' : backendType === 'boolean' ? 'BOOLEAN' : 'STRING';
+        const mapType = backendType === 'integer' ? 'INT' : 
+                       backendType === 'number' ? 'FLOAT' : 
+                       backendType === 'boolean' ? 'BOOLEAN' : 
+                       backendType === 'array' ? 'ARRAY' : 'STRING';
         const param: ModelParam = {
           type: mapType as ModelParam['type'],
-          default: p.default,
-          required: Boolean(p.required),
+          default: p.Default || p.default,
+          required: Boolean(p.Required),
         };
-        if (Array.isArray(p.range)) {
+        
+        // 处理 Range 选项（新格式，大写R）
+        if (Array.isArray(p.Range)) {
+          param.Range = p.Range as Array<string | number>;
+          // 如果是NUMBER类型且有Range，使用滑块
+          if (backendType === 'number' && p.Range.length === 2) {
+            param.min = Math.min(p.Range[0], p.Range[1]);
+            param.max = Math.max(p.Range[0], p.Range[1]);
+            param.step = 0.01; // 默认步长为1
+            param.display = 'slider';
+          } else {
+            param.display = 'select';
+          }
+        }
+        // 处理旧的 range 选项（小写r）
+        else if (Array.isArray(p.range)) {
           param.options = p.range as Array<string | number>;
           param.display = 'select';
-        } else if (p.range && Array.isArray(p.range)) {
-          param.options = p.range as Array<string | number>;
         }
         transformed[key] = param;
       });
+      console.log('transformed', transformed);
       setModelParams(transformed);
 
       const initialValues: Record<string, any> = {};

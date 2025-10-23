@@ -33,7 +33,7 @@ export interface VideoEffect {
 
 // API参数类型定义
 export interface ModelParam {
-  type: 'STRING' | 'INT' | 'FLOAT' | 'BOOLEAN';
+  type: 'STRING' | 'INT' | 'FLOAT' | 'BOOLEAN' | 'ARRAY';
   default: any;
   tooltip?: string;
   multiline?: boolean;
@@ -47,6 +47,8 @@ export interface ModelParam {
   // 新增：是否必填 & 通用选项
   required?: boolean;
   options?: Array<string | number>;
+  // 新增：Range 选项（新参数格式）
+  Range?: Array<string | number>;
 }
 
 export interface ModelParams {
