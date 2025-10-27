@@ -279,6 +279,45 @@ const DynamicParamField: React.FC<DynamicParamFieldProps> = ({
   const renderField = () => {
     // 优先处理 Range 选项（新的参数格式）
     if (Array.isArray((paramConfig as any).Range) && (paramConfig as any).Range.length > 0) {
+      // 特殊处理 seed 参数
+      if (paramName.toLowerCase() === 'seed') {
+        const range = (paramConfig as any).Range;
+        const minVal = range[0];
+        const maxVal = range[1];
+        
+        const handleSeedRandomize = () => {
+          // 生成 minVal 到 maxVal 之间的随机整数
+          const randomSeed = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+          onChange(randomSeed);
+        };
+        
+        return (
+          <InputContainer>
+            <NumberInput
+              type="number"
+              min={minVal}
+              max={maxVal}
+              step={1}
+              value={value === -1 ? '-1' : (value || '-1')}
+              onChange={(e) => {
+                const val = e.target.value;
+                onChange(val === '' ? -1 : Number(val));
+              }}
+              placeholder="Enter seed (-1 for random)"
+              disabled={disabled}
+            />
+            <RandomizeButton
+              type="button"
+              onClick={handleSeedRandomize}
+              disabled={disabled}
+              title="Generate random seed"
+            >
+              <RotateCcw size={16} />
+            </RandomizeButton>
+          </InputContainer>
+        );
+      }
+      
       // 如果是数字类型且有Range，且display为slider，则使用滑块
       if ((type === 'FLOAT' || type === 'INT') && display === 'slider' && min !== undefined && max !== undefined) {
         return (
