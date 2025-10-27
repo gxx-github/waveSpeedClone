@@ -283,7 +283,7 @@ const PreviewText = styled.p`
   margin-bottom: 1rem;
 `;
 
-const StatusIndicator = styled.div<{ $status: 'idle' | 'processing' | 'completed' }>`
+const StatusIndicator = styled.div<{ $status: 'idle' | 'processing' | 'completed' | 'slow' }>`
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -300,6 +300,8 @@ const StatusIndicator = styled.div<{ $status: 'idle' | 'processing' | 'completed
         return `background: #fef3c7; color: #92400e;`;
       case 'completed':
         return `background: #dcfce7; color: #166534;`;
+      case 'slow':
+        return `background: #dbeafe; color: #1e40af;`;
     }
   }}
 `;
@@ -372,7 +374,7 @@ const ModelDetailPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'playground' | 'json' | 'api'>('playground');
-  const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error' | 'slow'>('idle');
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [generatedResult, setGeneratedResult] = useState<string | null>(null);
@@ -659,7 +661,7 @@ const ModelDetailPage: React.FC = () => {
 
         const requestId: string = String(res.uuid);
         const startTime = Date.now();
-        const timeoutMs = Math.max(30000, (estimatedTime || 15) * 1000 * 2); // 至少 15s，上限=估计时长*2
+        const slowThresholdMs = 60000; // 1分钟慢生成提示阈值
         const pollIntervalMs = 1500;
 
         const pollResult = async (): Promise<void> => {
@@ -698,19 +700,19 @@ const ModelDetailPage: React.FC = () => {
               return;
             }
 
-            if (Date.now() - startTime > timeoutMs) {
-              setStatus('error');
-              showToast('生成超时，请稍后重试', { type: 'error' });
-              return;
+            // 检查是否超过1分钟，如果是则显示慢生成提示
+            if (Date.now() - startTime > slowThresholdMs && status !== 'slow') {
+              setStatus('slow');
+              showToast('生成结果较慢，请到Dashboard查看进度', { type: 'info' });
             }
 
             setTimeout(pollResult, pollIntervalMs);
           } catch (e) {
-            // 轮询单次失败不立刻失败，继续重试直到超时
-            if (Date.now() - startTime > timeoutMs) {
-              setStatus('error');
-              showToast('生成超时，请稍后重试', { type: 'error' });
-              return;
+            // 轮询单次失败不立刻失败，继续重试
+            // 检查是否超过1分钟，如果是则显示慢生成提示
+            if (Date.now() - startTime > slowThresholdMs && status !== 'slow') {
+              setStatus('slow');
+              showToast('生成结果较慢，请到Dashboard查看进度', { type: 'info' });
             }
             setTimeout(pollResult, pollIntervalMs);
           }
@@ -1057,6 +1059,30 @@ const ModelDetailPage: React.FC = () => {
           </>
         );
 
+      case 'slow':
+        return (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <Clock size={48} />
+            </div>
+            <PreviewText>生成时间较长，请耐心等待...</PreviewText>
+            <StatusIndicator $status="slow">
+              <span>●</span>
+              生成结果较慢，请到Dashboard查看进度
+            </StatusIndicator>
+            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+              <Button 
+                onClick={() => navigate('/dashboard')} 
+                variant="secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}
+              >
+                <ArrowRight size={16} />
+                前往Dashboard查看
+              </Button>
+            </div>
+          </>
+        );
+
       case 'error':
         return (
           <>
@@ -1160,7 +1186,7 @@ const ModelDetailPage: React.FC = () => {
                         paramConfig={paramConfig}
                         value={paramValues[paramName]}
                         onChange={(value) => handleParamChange(paramName, value)}
-                        disabled={status === 'processing'}
+                        disabled={status === 'processing' || status === 'slow'}
                       />
                       ))
                   ) : (
@@ -1186,7 +1212,7 @@ const ModelDetailPage: React.FC = () => {
                       onClick={handleReset}
                       variant="secondary"
                       style={{ flex: 1 }}
-                      disabled={status === 'processing'}
+                      disabled={status === 'processing' || status === 'slow'}
                     >
                       {t('modelDetail.reset')}
                     </Button>
@@ -1194,13 +1220,18 @@ const ModelDetailPage: React.FC = () => {
                       onClick={handleGenerate}
                       variant="primary"
                       style={{ flex: 2 }}
-                      disabled={status === 'processing'}
+                      disabled={status === 'processing' || status === 'slow'}
                     >
                       {status === 'processing' ? (
                         <>
                           <SpinningIcon size={16} />
                           {t('modelDetail.generating')}
                            {/* {Math.round(progress)}% */}
+                        </>
+                      ) : status === 'slow' ? (
+                        <>
+                          <Clock size={16} />
+                          生成中...
                         </>
                       ) : status === 'completed' ? (
                         t('modelDetail.generate')
