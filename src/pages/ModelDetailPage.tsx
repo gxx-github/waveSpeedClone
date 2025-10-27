@@ -506,7 +506,7 @@ const ModelDetailPage: React.FC = () => {
         const param: ModelParam = {
           type: mapType as ModelParam['type'],
           default: p.Default || p.default,
-          required: Boolean(p.Required),
+          required: p.Required === 'Yes' ? true : false,
         };
         
         // 处理 Range 选项（新格式，大写R）
